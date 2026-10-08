@@ -1,3 +1,7 @@
-<flux:card {{ $attributes->class(['border-l-4 border-l-plum-dark bg-white']) }}>
+@props([
+    'padding' => true,
+])
+
+<div {{ $attributes->class(['rounded-[14px] border border-border bg-white', 'p-5' => $padding]) }}>
     {{ $slot }}
-</flux:card>
+</div>

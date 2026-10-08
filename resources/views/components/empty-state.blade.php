@@ -4,8 +4,8 @@
     'description' => null,
 ])
 
-<div {{ $attributes->class(['flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-zinc-300 bg-white px-6 py-12 text-center']) }}>
-    <flux:icon :icon="$icon" class="size-10 text-zinc-400" />
+<div {{ $attributes->class(['flex flex-col items-center justify-center gap-3 rounded-[14px] border border-dashed border-border-input bg-white px-6 py-12 text-center']) }}>
+    <flux:icon :icon="$icon" class="size-10 text-subtle" />
 
     <flux:heading size="lg">{{ $title }}</flux:heading>
 

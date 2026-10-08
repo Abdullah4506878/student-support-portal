@@ -1,58 +1,58 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+        <x-auth-header :title="__('Welcome back')" :description="__('Log in with your university email to continue.')" />
 
-        <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
+        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-[18px]">
             @csrf
 
-            <!-- Email Address -->
             <flux:input
                 name="email"
-                :label="__('Email address')"
+                :label="__('University email')"
                 :value="old('email')"
                 type="email"
                 required
                 autofocus
                 autocomplete="email"
-                placeholder="email@example.com"
+                placeholder="name@superior.edu.pk"
             />
 
-            <!-- Password -->
-            <div class="relative">
-                <flux:input
-                    name="password"
-                    :label="__('Password')"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    :placeholder="__('Password')"
-                    viewable
-                />
+            <flux:input
+                name="password"
+                :label="__('Password')"
+                type="password"
+                required
+                autocomplete="current-password"
+                :placeholder="__('Enter your password')"
+                viewable
+            />
 
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
-            </div>
+            <flux:checkbox name="remember" :label="__('Keep me signed in on this device')" :checked="old('remember')" />
 
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
+            <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
+                {{ __('Log in') }}
+            </flux:button>
 
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
+            @if (Route::has('password.request'))
+                <flux:link class="self-center text-sm font-semibold" :href="route('password.request')" wire:navigate>
+                    {{ __('Forgot your password?') }}
+                </flux:link>
+            @endif
         </form>
 
-        <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('Don\'t have an account?') }}</span>
-            <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+        <div class="flex items-center gap-3 text-[13px] text-placeholder">
+            <span class="h-px flex-1 bg-border-soft"></span>
+            {{ __('New to the portal?') }}
+            <span class="h-px flex-1 bg-border-soft"></span>
         </div>
+
+        <flux:button :href="route('register')" variant="outline" class="w-full" wire:navigate>
+            {{ __('Create a student account') }}
+        </flux:button>
+
+        <p class="m-0 text-center text-[13px] leading-relaxed text-muted">
+            {{ __('Only Software Engineering students with an @superior.edu.pk email can register. Trouble logging in? Contact the SE Admin Office.') }}
+        </p>
     </div>
 </x-layouts::auth>

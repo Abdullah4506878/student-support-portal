@@ -1,16 +1,27 @@
 @props([
     'label',
     'value',
-    'icon' => null,
+    'note' => null,
+    'urgent' => false,
+    'href' => null,
 ])
 
-<div {{ $attributes->class(['flex items-center gap-4 rounded-lg bg-stat-purple p-5']) }}>
-    @if ($icon)
-        <flux:icon :icon="$icon" class="size-8 shrink-0 text-plum-dark" />
-    @endif
+@php
+    $tag = $href ? 'a' : 'div';
+@endphp
 
-    <div>
-        <div class="text-2xl font-semibold text-zinc-800">{{ $value }}</div>
-        <div class="text-sm text-zinc-600">{{ $label }}</div>
-    </div>
-</div>
+<{{ $tag }}
+    @if ($href) href="{{ $href }}" @endif
+    {{ $attributes->class([
+        'flex flex-col gap-2 rounded-[14px] p-[18px] no-underline',
+        'border border-border bg-white' => ! $urgent,
+        'border border-[#F3C4C0] bg-[#FCEBEA]' => $urgent,
+    ]) }}
+>
+    <span class="text-sm font-medium {{ $urgent ? 'text-[#8A1C14]' : 'text-muted' }}">{{ $label }}</span>
+    <span class="text-[30px] font-bold tracking-tight tabular-nums {{ $urgent ? 'text-[#8A1C14]' : 'text-ink' }}">{{ $value }}</span>
+
+    @if ($note)
+        <span class="text-[13px] {{ $urgent ? 'text-[#8A1C14]' : 'text-subtle' }}">{{ $note }}</span>
+    @endif
+</{{ $tag }}>

@@ -4,6 +4,7 @@
     $isSuperAdmin = auth()->user()?->hasRole(\App\Enums\RoleName::SuperAdmin->value);
     $dashboardRoute = $isSuperAdmin ? 'super-admin.dashboard' : 'admin.dashboard';
     $routePrefix = $isSuperAdmin ? 'super-admin.' : 'admin.';
+    $navItemClass = 'text-white/85! data-current:border-transparent! data-current:bg-white/14! data-current:text-white! hover:text-white! hover:bg-white/8!';
 @endphp
 
 <!DOCTYPE html>
@@ -12,17 +13,18 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-page">
-        <x-layouts::partials.header-bar
-            :notifications-route="Route::has($routePrefix.'notifications.index') ? $routePrefix.'notifications.index' : null"
-        >
-            <x-slot:leading>
-                <flux:sidebar.toggle class="text-white lg:hidden" icon="bars-2" inset="left" />
-            </x-slot:leading>
-        </x-layouts::partials.header-bar>
+        <flux:sidebar collapsible="mobile" sticky class="flex w-64 flex-col gap-7 border-e-0 bg-plum-dark p-4 text-white">
+            <div class="flex items-center justify-between gap-2 px-2">
+                <a href="{{ route($dashboardRoute) }}" wire:navigate class="flex items-center">
+                    <x-superior-logo white class="h-8 w-auto" />
+                </a>
+                <flux:sidebar.collapse class="text-white/70 hover:text-white lg:hidden" />
+            </div>
 
-        <flux:sidebar collapsible="mobile" sticky class="border-e border-zinc-200 bg-white">
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="layout-grid" :href="route($dashboardRoute)" :current="request()->routeIs($dashboardRoute)" wire:navigate>
+                <span class="px-3 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-white/60 uppercase">{{ __('Workspace') }}</span>
+
+                <flux:sidebar.item icon="layout-grid" :href="route($dashboardRoute)" :current="request()->routeIs($dashboardRoute)" wire:navigate :class="$navItemClass">
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
 
@@ -31,6 +33,7 @@
                     :href="Route::has($routePrefix.'applications.index') ? route($routePrefix.'applications.index') : '#'"
                     :current="request()->routeIs($routePrefix.'applications.*')"
                     wire:navigate
+                    :class="$navItemClass"
                 >
                     {{ __('Applications') }}
                 </flux:sidebar.item>
@@ -41,6 +44,7 @@
                         :href="Route::has('super-admin.admins.index') ? route('super-admin.admins.index') : '#'"
                         :current="request()->routeIs('super-admin.admins.*')"
                         wire:navigate
+                        :class="$navItemClass"
                     >
                         {{ __('Admin Officers') }}
                     </flux:sidebar.item>
@@ -51,6 +55,7 @@
                     :href="Route::has($routePrefix.'students.index') ? route($routePrefix.'students.index') : '#'"
                     :current="request()->routeIs($routePrefix.'students.*')"
                     wire:navigate
+                    :class="$navItemClass"
                 >
                     {{ __('Students') }}
                 </flux:sidebar.item>
@@ -61,6 +66,7 @@
                         :href="Route::has('super-admin.categories.index') ? route('super-admin.categories.index') : '#'"
                         :current="request()->routeIs('super-admin.categories.*')"
                         wire:navigate
+                        :class="$navItemClass"
                     >
                         {{ __('Categories') }}
                     </flux:sidebar.item>
@@ -71,6 +77,7 @@
                     :href="Route::has($routePrefix.'announcements.index') ? route($routePrefix.'announcements.index') : '#'"
                     :current="request()->routeIs($routePrefix.'announcements.*')"
                     wire:navigate
+                    :class="$navItemClass"
                 >
                     {{ __('Announcements') }}
                 </flux:sidebar.item>
@@ -80,6 +87,7 @@
                     :href="Route::has($routePrefix.'notifications.index') ? route($routePrefix.'notifications.index') : '#'"
                     :current="request()->routeIs($routePrefix.'notifications.*')"
                     wire:navigate
+                    :class="$navItemClass"
                 >
                     {{ __('Notifications') }}
                 </flux:sidebar.item>
@@ -90,6 +98,7 @@
                         :href="Route::has('super-admin.audit-log.index') ? route('super-admin.audit-log.index') : '#'"
                         :current="request()->routeIs('super-admin.audit-log.*')"
                         wire:navigate
+                        :class="$navItemClass"
                     >
                         {{ __('Audit Log') }}
                     </flux:sidebar.item>
@@ -99,12 +108,64 @@
                         :href="Route::has('super-admin.settings.edit') ? route('super-admin.settings.edit') : '#'"
                         :current="request()->routeIs('super-admin.settings.*')"
                         wire:navigate
+                        :class="$navItemClass"
                     >
                         {{ __('System Settings') }}
                     </flux:sidebar.item>
                 @endif
             </flux:sidebar.nav>
+
+            <flux:spacer />
+
+            <flux:dropdown position="top" align="start" class="mt-auto">
+                <button type="button" class="flex w-full items-center gap-3 rounded-xl bg-white/8 p-3 text-left" data-test="sidebar-user-menu-button">
+                    <flux:avatar size="sm" :name="auth()->user()->name" :initials="auth()->user()->initials()" />
+                    <span class="flex flex-1 flex-col leading-tight">
+                        <span class="text-sm font-semibold">{{ auth()->user()->name }}</span>
+                        <span class="text-xs text-white/72">{{ $isSuperAdmin ? __('Super Admin') : __('Admin Officer').' · '.(auth()->user()->department?->code ?? '') }}</span>
+                    </span>
+                    <flux:icon icon="ellipsis-vertical" variant="mini" class="size-4.5 text-white/80" />
+                </button>
+
+                <flux:menu>
+                    <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+                        {{ __('Settings') }}
+                    </flux:menu.item>
+
+                    <form method="POST" action="{{ route('logout') }}" class="w-full">
+                        @csrf
+                        <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full cursor-pointer" data-test="logout-button">
+                            {{ __('Log out') }}
+                        </flux:menu.item>
+                    </form>
+                </flux:menu>
+            </flux:dropdown>
         </flux:sidebar>
+
+        <flux:header class="border-b border-border bg-white">
+            <flux:sidebar.toggle class="text-ink lg:hidden" icon="bars-2" />
+
+            <label class="ms-2 flex h-11 flex-1 basis-80 items-center gap-2.5 rounded-xl border border-border-input bg-[#FAF8F9] px-3.5 text-subtle sm:max-w-[520px]">
+                <flux:icon icon="magnifying-glass" variant="outline" class="size-4.5" />
+                <span class="sr-only">{{ __('Search') }}</span>
+                <input
+                    type="search"
+                    placeholder="{{ __('Search by application ID, student name or reg. no.') }}"
+                    class="min-w-0 flex-1 border-0 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-placeholder"
+                />
+            </label>
+
+            <flux:spacer />
+
+            <a
+                href="{{ Route::has($routePrefix.'notifications.index') ? route($routePrefix.'notifications.index') : '#' }}"
+                wire:navigate
+                aria-label="{{ __('Notifications') }}"
+                class="flex size-11 items-center justify-center rounded-xl border border-border text-ink-soft no-underline hover:bg-page"
+            >
+                <flux:icon icon="bell" variant="outline" class="size-5" />
+            </a>
+        </flux:header>
 
         <flux:main container>
             {{ $slot }}

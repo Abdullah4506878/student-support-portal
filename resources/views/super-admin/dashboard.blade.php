@@ -1,41 +1,38 @@
 <x-layouts::admin :title="__('Super Admin Dashboard')">
-    <x-page-header :title="__('Super Admin Dashboard')" :subtitle="__('System-wide administration at a glance.')">
-        <x-slot:actions>
-            <x-confirm-modal
-                name="demo-suspend"
-                heading="{{ __('Suspend this student?') }}"
-                text="{{ __('They will no longer be able to log in until reactivated.') }}"
-                confirm-label="{{ __('Suspend') }}"
-                variant="danger"
-                confirm-action="suspendStudent(1)"
-            >
-                <x-slot:trigger>
-                    <flux:button variant="danger" icon="user-minus">{{ __('Suspend Student (demo)') }}</flux:button>
-                </x-slot:trigger>
-            </x-confirm-modal>
-        </x-slot:actions>
-    </x-page-header>
+    <div class="flex flex-col gap-6 py-7">
+        <x-page-header :title="__('System overview')" :subtitle="__('All departments · :date', ['date' => now()->format('l, j F Y')])" />
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <x-stat-tile icon="building-office-2" :label="__('Departments')" value="1" />
-        <x-stat-tile icon="user-group" :label="__('Admin Officers')" value="1" />
-        <x-stat-tile icon="users" :label="__('Students')" value="128" />
-        <x-stat-tile icon="clipboard-document-list" :label="__('All Applications')" value="47" />
-    </div>
+        <section aria-label="{{ __('Summary') }}" class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5">
+            <x-stat-tile :label="__('Departments')" value="1" :note="__('Software Engineering')" />
+            <x-stat-tile :label="__('Admin Officers')" value="1" :note="__('Across all departments')" />
+            <x-stat-tile :label="__('Students')" value="128" :note="__('Registered accounts')" />
+            <x-stat-tile :label="__('All applications')" value="47" :note="__('All time')" />
+        </section>
 
-    <x-card class="mt-6">
-        <flux:heading size="lg">{{ __('Recent Activity') }}</flux:heading>
-        <flux:subheading>{{ __('A sample of the audit log entries Super Admin can review.') }}</flux:subheading>
+        <div class="flex flex-wrap items-start gap-6">
+            <x-panel :title="__('Recent activity')" class="min-w-0 flex-[999_1_640px]">
+                @foreach ([
+                    ['text' => 'Admin Officer updated SC-2026-000124 status to Resolved', 'time' => 'Today, 9:40 AM', 'dot' => '#2E8A4E'],
+                    ['text' => 'Student Ayesha Khan submitted a new application', 'time' => 'Today, 8:15 AM', 'dot' => '#875A7B'],
+                    ['text' => 'Admin Officer changed SC-2026-000124 priority to Urgent', 'time' => 'Yesterday', 'dot' => '#B42318'],
+                ] as $activity)
+                    <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
+                        <span class="mt-1.5 size-2 shrink-0 rounded-full" style="background: {{ $activity['dot'] }}"></span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-sm leading-relaxed text-ink-soft">{{ $activity['text'] }}</span>
+                            <span class="text-[13px] text-subtle">{{ $activity['time'] }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </x-panel>
 
-        <div class="mt-4 space-y-3 text-sm">
-            <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-                <span class="text-zinc-700">{{ __('Admin Officer updated application status') }}</span>
-                <x-status-badge status="resolved" />
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-zinc-700">{{ __('Student submitted a new application') }}</span>
-                <x-priority-badge priority="high" />
-            </div>
+            <aside class="flex min-w-0 flex-1 basis-72 flex-col gap-6">
+                <x-empty-state
+                    icon="megaphone"
+                    :title="__('No announcements yet')"
+                    :description="__('Announcements from every department will appear here.')"
+                />
+            </aside>
         </div>
-    </x-card>
+    </div>
 </x-layouts::admin>

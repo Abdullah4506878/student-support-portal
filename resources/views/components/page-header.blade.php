@@ -3,12 +3,12 @@
     'subtitle' => null,
 ])
 
-<div {{ $attributes->class(['mb-6 flex flex-wrap items-start justify-between gap-4']) }}>
-    <div>
-        <flux:heading size="xl" level="1">{{ $title }}</flux:heading>
+<div {{ $attributes->class(['mb-2 flex flex-wrap items-end justify-between gap-4']) }}>
+    <div class="flex flex-col gap-1.5">
+        <h1 class="m-0 text-[28px] font-bold tracking-tight text-ink">{{ $title }}</h1>
 
         @if ($subtitle)
-            <flux:subheading size="lg">{{ $subtitle }}</flux:subheading>
+            <p class="m-0 text-[15px] text-muted">{{ $subtitle }}</p>
         @endif
     </div>
 
