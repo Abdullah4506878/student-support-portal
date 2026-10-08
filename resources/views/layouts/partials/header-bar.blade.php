@@ -5,8 +5,8 @@
 <flux:header container class="border-b border-plum-dark bg-plum">
     {{ $leading ?? '' }}
 
-    <a href="{{ route('dashboard') }}" wire:navigate>
-        <x-superior-logo />
+    <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center rounded-md bg-white px-3 py-1.5">
+        <x-superior-logo class="h-7 w-auto" />
     </a>
 
     <flux:spacer />

@@ -7,9 +7,7 @@
         <div class="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div class="flex w-full max-w-md flex-col gap-6">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2" wire:navigate>
-                    <span class="flex items-center justify-center rounded-md bg-plum px-4 py-2">
-                        <x-superior-logo />
-                    </span>
+                    <x-superior-logo class="h-12 w-auto" />
 
                     <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
                 </a>
