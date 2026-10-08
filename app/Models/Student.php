@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedToAdminDepartmentViaUser;
+use Database\Factories\StudentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
+    /** @use HasFactory<StudentFactory> */
+    use HasFactory, ScopedToAdminDepartmentViaUser;
+
     protected $fillable = [
         'user_id',
         'registration_no',

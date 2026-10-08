@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedToAdminDepartment;
+use Database\Factories\ApplicationCategoryFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ApplicationCategory extends Model
 {
+    /** @use HasFactory<ApplicationCategoryFactory> */
+    use HasFactory, ScopedToAdminDepartment;
+
     protected $fillable = [
         'department_id',
         'name',

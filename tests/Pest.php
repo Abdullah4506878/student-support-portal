@@ -1,6 +1,11 @@
 <?php
 
+use App\Enums\RoleName;
+use App\Models\Department;
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -44,7 +49,52 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Create the three application roles. RefreshDatabase wipes them between
+ * tests, so call this in any test that assigns or checks a role.
+ */
+function createRoles(): void
 {
-    // ..
+    foreach (RoleName::cases() as $role) {
+        Role::findOrCreate($role->value);
+    }
+}
+
+/**
+ * A student user, with a Student profile, in the given (or a fresh) department.
+ */
+function createStudentUser(?Department $department = null): User
+{
+    $department ??= Department::factory()->create();
+
+    $user = User::factory()->create(['department_id' => $department->id]);
+    $user->assignRole(RoleName::Student->value);
+
+    Student::factory()->create(['user_id' => $user->id]);
+
+    return $user->refresh();
+}
+
+/**
+ * An Admin Officer user in the given (or a fresh) department.
+ */
+function createAdminOfficer(?Department $department = null): User
+{
+    $department ??= Department::factory()->create();
+
+    $user = User::factory()->create(['department_id' => $department->id]);
+    $user->assignRole(RoleName::AdminOfficer->value);
+
+    return $user;
+}
+
+/**
+ * A Super Admin user, which belongs to no single department.
+ */
+function createSuperAdmin(): User
+{
+    $user = User::factory()->create(['department_id' => null]);
+    $user->assignRole(RoleName::SuperAdmin->value);
+
+    return $user;
 }

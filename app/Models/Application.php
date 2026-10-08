@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
+use App\Models\Concerns\ScopedToAdminDepartment;
+use Database\Factories\ApplicationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 class Application extends Model
 {
+    /** @use HasFactory<ApplicationFactory> */
+    use HasFactory, ScopedToAdminDepartment;
+
     protected $fillable = [
         'application_no',
         'student_id',

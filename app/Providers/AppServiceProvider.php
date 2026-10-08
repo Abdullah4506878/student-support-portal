@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Listeners\ActivateVerifiedUser;
+use App\Listeners\RecordSuccessfulLogin;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Event::listen(Verified::class, ActivateVerifiedUser::class);
+        Event::listen(Login::class, RecordSuccessfulLogin::class);
     }
 
     /**
