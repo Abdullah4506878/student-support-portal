@@ -20,6 +20,21 @@ test('a guest hitting an admin route is redirected to login and back to it after
     ])->assertRedirect(route('admin.dashboard'));
 });
 
+test('an admin officer logging in with a super admin url intended lands on their own dashboard', function () {
+    $response = $this->get(route('super-admin.dashboard'));
+    $response->assertRedirect(route('login'));
+
+    $user = User::factory()->create();
+    $user->assignRole(RoleName::AdminOfficer->value);
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard'));
+
+    $this->get(route('dashboard'))->assertRedirect(route('admin.dashboard'));
+});
+
 test('a student cannot access the admin dashboard', function () {
     $user = User::factory()->create();
     $user->assignRole(RoleName::Student->value);

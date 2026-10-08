@@ -9,7 +9,7 @@
                 <span class="text-[13px] font-semibold tracking-[0.08em] text-white/72 uppercase">Department of Software Engineering</span>
 
                 <div class="flex max-w-[520px] flex-col gap-7">
-                    <x-superior-logo white class="h-16 w-auto" />
+                    <x-superior-logo white class="h-14 w-auto" />
 
                     <h1 class="font-display m-0 text-[48px] leading-[1.1] font-medium tracking-tight">Student Support Portal</h1>
 

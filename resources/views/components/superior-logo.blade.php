@@ -3,11 +3,15 @@
     'white' => false,
 ])
 
-@if (file_exists(public_path('images/superior-logo.png')))
+@php
+    $file = $white ? 'superior-logo-white.svg' : 'superior-logo.svg';
+@endphp
+
+@if (file_exists(public_path('images/'.$file)))
     <img
-        src="{{ asset('images/superior-logo.png') }}"
+        src="{{ asset('images/'.$file) }}"
         alt="{{ config('app.name') }}"
-        {{ $attributes->class(array_filter(['h-9 w-auto', $white ? 'brightness-0 invert' : '', $class])) }}
+        {{ $attributes->class(array_filter(['h-9 w-auto', $class])) }}
     />
 @else
     <span {{ $attributes->class(['inline-flex flex-col leading-tight font-semibold', $white ? 'text-white' : 'text-ink', $class]) }}>
