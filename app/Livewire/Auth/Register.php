@@ -39,24 +39,81 @@ class Register extends Component
     }
 
     /**
-     * Validate a single field: on blur the first time, then live once it
-     * has an error (see the wire:model modifier chosen in the view).
+     * Fires on every keystroke (all fields use wire:model.live). Never
+     * shows a *new* error here — only refreshes one that already exists,
+     * so it clears the moment the value becomes valid. New errors only
+     * appear on blur (see blurred()). Related-field checks are the one
+     * exception: they may introduce a new error on the related field.
      */
     public function updated(string $property): void
     {
-        // The "confirmed" rule lives on the password field, so re-check it
-        // once the confirmation changes too, clearing a stale mismatch.
-        if ($property === 'password_confirmation' && $this->password !== '') {
+        // The "confirmed" rule — and its error — lives on the password
+        // field, not password_confirmation.
+        if ($property === 'password_confirmation') {
+            if ($this->getErrorBag()->has('password')) {
+                $this->validateOnly('password', ['password' => $this->passwordRules()]);
+            }
+
+            return;
+        }
+
+        if ($this->getErrorBag()->has($property)) {
+            $this->revalidate($property);
+        }
+
+        $this->revalidateRelated($property);
+    }
+
+    /**
+     * Validate a field on blur — the only place a *new* error appears
+     * for the field the student is actually editing.
+     */
+    public function blurred(string $property): void
+    {
+        // The "confirmed" rule — and its error — lives on the password
+        // field, not password_confirmation.
+        if ($property === 'password_confirmation') {
             $this->validateOnly('password', ['password' => $this->passwordRules()]);
 
             return;
         }
 
+        $this->revalidate($property);
+    }
+
+    private function revalidate(string $property): void
+    {
         $rules = $this->rulesFor($property);
 
         if ($rules !== null) {
             $this->validateOnly($property, [$property => $rules]);
         }
+    }
+
+    /**
+     * Re-check the field related to whichever one just changed — but only
+     * if that related field already has a value worth checking.
+     */
+    private function revalidateRelated(string $property): void
+    {
+        $related = match ($property) {
+            'program' => 'registration_no',
+            'registration_no' => 'email',
+            'password' => 'password_confirmation',
+            default => null,
+        };
+
+        if ($related === null || $this->{$related} === '') {
+            return;
+        }
+
+        if ($related === 'password_confirmation') {
+            $this->validateOnly('password', ['password' => $this->passwordRules()]);
+
+            return;
+        }
+
+        $this->revalidate($related);
     }
 
     /**

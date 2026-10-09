@@ -52,13 +52,13 @@ trait RegistrationValidationRules
                 $pattern = config('students.registration_no_pattern');
 
                 if (! preg_match($pattern, strtoupper((string) $value), $matches)) {
-                    $fail(__('The registration number format is invalid. Example: SU92-BSSEM-F22-171.'));
+                    $fail(__('Invalid registration number format.'));
 
                     return;
                 }
 
                 if ($program && $matches[1] !== $program) {
-                    $fail(__('The registration number does not match the selected program.'));
+                    $fail(__("This registration number doesn't match the selected program."));
                 }
             },
             $unique,
