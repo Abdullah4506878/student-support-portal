@@ -5,7 +5,11 @@ namespace App\Models;
 use App\Enums\ApplicationEventType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
+/**
+ * @property ApplicationEventType $event_type
+ */
 class ApplicationEvent extends Model
 {
     const UPDATED_AT = null;
@@ -43,5 +47,28 @@ class ApplicationEvent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * A short, human-readable description for activity feeds (e.g. the
+     * student dashboard's "Latest updates" panel).
+     */
+    public function description(): string
+    {
+        $applicationNo = $this->application->application_no;
+
+        return match ($this->event_type) {
+            ApplicationEventType::Submitted => __(':number was submitted.', ['number' => $applicationNo]),
+            ApplicationEventType::StatusChanged => __(':number moved to :status.', ['number' => $applicationNo, 'status' => Str::headline((string) $this->to_value)]),
+            ApplicationEventType::PriorityChanged => __('The priority on :number was updated.', ['number' => $applicationNo]),
+            ApplicationEventType::MessageSent => __('The Admin Office sent a message on :number.', ['number' => $applicationNo]),
+            ApplicationEventType::InfoRequested => __('The Admin Office requested more information on :number.', ['number' => $applicationNo]),
+            ApplicationEventType::DocumentRequested => __('The Admin Office requested a document on :number.', ['number' => $applicationNo]),
+            ApplicationEventType::StudentResponded => __('You responded on :number.', ['number' => $applicationNo]),
+            ApplicationEventType::AttachmentUploaded => __('A file was uploaded on :number.', ['number' => $applicationNo]),
+            ApplicationEventType::Resolved => __(':number was marked resolved.', ['number' => $applicationNo]),
+            ApplicationEventType::Closed => __(':number was closed.', ['number' => $applicationNo]),
+            ApplicationEventType::Rejected => __(':number was rejected.', ['number' => $applicationNo]),
+        };
     }
 }

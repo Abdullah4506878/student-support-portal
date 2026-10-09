@@ -5,13 +5,23 @@ namespace App\Policies;
 use App\Enums\RoleName;
 use App\Models\Application;
 use App\Models\ApplicationAttachment;
+use App\Models\Scopes\AdminDepartmentScope;
 use App\Models\User;
 
 class ApplicationAttachmentPolicy
 {
+    /**
+     * Loaded without the admin-department scope: an attachment belonging to
+     * another department must still resolve to a real Application here, so
+     * the check below can deny it with a clean false instead of a null
+     * being passed around.
+     */
     public function view(User $user, ApplicationAttachment $attachment): bool
     {
-        return $this->belongsToApplication($user, $attachment->application);
+        $application = Application::withoutGlobalScope(AdminDepartmentScope::class)
+            ->find($attachment->application_id);
+
+        return $application && $this->belongsToApplication($user, $application);
     }
 
     /**

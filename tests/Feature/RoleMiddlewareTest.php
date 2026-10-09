@@ -72,8 +72,7 @@ test('a super admin cannot access the student or admin dashboards', function () 
 });
 
 test('each role can reach its own dashboard', function () {
-    $student = User::factory()->create();
-    $student->assignRole(RoleName::Student->value);
+    $student = createStudentUser();
     $this->actingAs($student)->get(route('student.dashboard'))->assertOk();
 
     $admin = User::factory()->create();

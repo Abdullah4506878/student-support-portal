@@ -12,7 +12,7 @@
     <div class="flex flex-col gap-6 py-8">
         <x-page-header :title="__(':greeting, :name', ['greeting' => $greeting, 'name' => $firstName])" :subtitle="__('Here is where your applications stand today.')">
             <x-slot:actions>
-                <flux:button :href="Route::has('student.applications.create') ? route('student.applications.create') : '#'" variant="primary" icon="plus" wire:navigate>
+                <flux:button :href="route('student.applications.create')" variant="primary" icon="plus" wire:navigate>
                     {{ __('New application') }}
                 </flux:button>
             </x-slot:actions>
@@ -47,99 +47,90 @@
             </dl>
         </section>
 
-        <section aria-label="{{ __('Action needed') }}" class="flex flex-wrap items-center gap-4 rounded-[14px] border border-[#F1D9A6] bg-[#FFF7E8] px-5.5 py-4.5">
-            <span class="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[#FBE7BF] text-[#8A5300]">
-                <flux:icon icon="exclamation-circle" variant="outline" class="size-5" />
-            </span>
-            <div class="flex flex-1 basis-80 flex-col gap-0.5">
-                <span class="text-[15px] font-bold text-[#5C3A00]">{{ __('The Admin Office needs a document from you') }}</span>
-                <span class="text-sm text-[#6E4A10]">SC-2026-000119 &middot; {{ __('Examination issue — "Please upload your latest fee challan so we can proceed."') }}</span>
-            </div>
-            <flux:button href="#" variant="primary" class="bg-[#8A5300]! hover:bg-[#6E4210]!">
-                {{ __('Upload document') }}
-            </flux:button>
-        </section>
+        @if ($actionNeeded)
+            <section aria-label="{{ __('Action needed') }}" class="flex flex-wrap items-center gap-4 rounded-[14px] border border-[#F1D9A6] bg-[#FFF7E8] px-5.5 py-4.5">
+                <span class="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[#FBE7BF] text-[#8A5300]">
+                    <flux:icon icon="exclamation-circle" variant="outline" class="size-5" />
+                </span>
+                <div class="flex flex-1 basis-80 flex-col gap-0.5">
+                    <span class="text-[15px] font-bold text-[#5C3A00]">{{ __('The Admin Office needs more information from you') }}</span>
+                    <span class="text-sm text-[#6E4A10]">{{ $actionNeeded->application_no }} &middot; {{ $actionNeeded->category->name }} — {{ $actionNeeded->subject }}</span>
+                </div>
+                <flux:button :href="route('student.applications.show', $actionNeeded)" variant="primary" class="bg-[#8A5300]! hover:bg-[#6E4210]!" wire:navigate>
+                    {{ __('View application') }}
+                </flux:button>
+            </section>
+        @endif
 
         <section aria-label="{{ __('Summary') }}" class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
-            <x-stat-tile :label="__('Total applications')" value="4" :note="__('Since Fall 2022')" />
-            <x-stat-tile :label="__('Waiting on you')" value="1" :note="__('Document requested')" />
-            <x-stat-tile :label="__('Being processed')" value="1" :note="__('Under review')" />
-            <x-stat-tile :label="__('Resolved')" value="2" :note="__('Last one on 2 Oct')" />
+            <x-stat-tile :label="__('Total applications')" :value="$stats['total']" />
+            <x-stat-tile :label="__('Waiting on you')" :value="$stats['waiting_on_you']" :note="__('Information requested')" />
+            <x-stat-tile :label="__('Being processed')" :value="$stats['processing']" :note="__('Under review or in progress')" />
+            <x-stat-tile :label="__('Resolved')" :value="$stats['resolved']" />
         </section>
 
         <div class="flex flex-wrap items-start gap-6">
             <x-panel :title="__('My applications')" class="min-w-0 flex-[999_1_640px]">
                 <x-slot:actions>
-                    <flux:link href="#" class="text-sm font-semibold">{{ __('View all') }}</flux:link>
+                    <flux:link :href="route('student.applications.index')" class="text-sm font-semibold" wire:navigate>{{ __('View all') }}</flux:link>
                 </x-slot:actions>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] border-collapse text-sm">
-                        <thead>
-                            <tr class="text-left text-xs tracking-[0.06em] text-subtle uppercase">
-                                <th class="px-[22px] py-3 font-semibold">{{ __('Application') }}</th>
-                                <th class="px-3 py-3 font-semibold">{{ __('Category') }}</th>
-                                <th class="px-3 py-3 font-semibold">{{ __('Last update') }}</th>
-                                <th class="px-[22px] py-3 font-semibold">{{ __('Status') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ([
-                                ['subject' => 'Exam result not updated on ERP', 'id' => 'SC-2026-000119', 'category' => 'Examination', 'updated' => '8 Oct, 11:30 AM', 'status' => 'info_required'],
-                                ['subject' => 'Fee challan shows wrong amount', 'id' => 'SC-2026-000124', 'category' => 'Fee', 'updated' => '7 Oct, 4:10 PM', 'status' => 'under_review'],
-                                ['subject' => 'Course registration for FYP-II', 'id' => 'SC-2026-000091', 'category' => 'Registration', 'updated' => '2 Oct, 10:05 AM', 'status' => 'resolved'],
-                                ['subject' => 'LMS access after password reset', 'id' => 'SC-2026-000063', 'category' => 'LMS / Portal', 'updated' => '21 Sep, 9:40 AM', 'status' => 'resolved'],
-                            ] as $app)
-                                <tr class="border-t border-border-soft">
-                                    <td class="px-[22px] py-3.5">
-                                        <div class="flex flex-col gap-0.5">
-                                            <a href="#" class="font-semibold text-ink no-underline">{{ $app['subject'] }}</a>
-                                            <span class="text-[13px] text-subtle tabular-nums">{{ $app['id'] }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-3.5 text-ink-soft">{{ $app['category'] }}</td>
-                                    <td class="px-3 py-3.5 whitespace-nowrap text-ink-soft">{{ $app['updated'] }}</td>
-                                    <td class="px-[22px] py-3.5"><x-status-badge :status="$app['status']" /></td>
+                @if ($applications->isEmpty())
+                    <div class="px-[22px] py-10 text-center text-sm text-subtle">
+                        {{ __("You haven't submitted any applications yet.") }}
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[640px] border-collapse text-sm">
+                            <thead>
+                                <tr class="text-left text-xs tracking-[0.06em] text-subtle uppercase">
+                                    <th class="px-[22px] py-3 font-semibold">{{ __('Application') }}</th>
+                                    <th class="px-3 py-3 font-semibold">{{ __('Category') }}</th>
+                                    <th class="px-3 py-3 font-semibold">{{ __('Submitted') }}</th>
+                                    <th class="px-[22px] py-3 font-semibold">{{ __('Status') }}</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                @foreach ($applications as $application)
+                                    <tr class="border-t border-border-soft">
+                                        <td class="px-[22px] py-3.5">
+                                            <a href="{{ route('student.applications.show', $application) }}" wire:navigate class="flex flex-col gap-0.5 no-underline">
+                                                <span class="font-semibold text-ink">{{ $application->subject }}</span>
+                                                <span class="text-[13px] text-subtle tabular-nums">{{ $application->application_no }}</span>
+                                            </a>
+                                        </td>
+                                        <td class="px-3 py-3.5 text-ink-soft">{{ $application->category->name }}</td>
+                                        <td class="px-3 py-3.5 whitespace-nowrap text-ink-soft">{{ $application->created_at->format('j M, g:i A') }}</td>
+                                        <td class="px-[22px] py-3.5"><x-status-badge :status="$application->status" /></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </x-panel>
 
             <aside class="flex min-w-0 flex-1 basis-80 flex-col gap-6">
                 <x-panel :title="__('Announcements')">
-                    <x-slot:actions>
-                        <flux:link href="#" class="text-sm font-semibold">{{ __('See all') }}</flux:link>
-                    </x-slot:actions>
-
-                    @foreach ([
-                        ['tag' => 'Event', 'title' => 'IEEE Tech Talk 2026 — registration open', 'date' => 'Posted 6 Oct · closes 15 Oct'],
-                        ['tag' => 'Deadline', 'title' => 'FYP-II proposal submission', 'date' => 'Posted 3 Oct · due 20 Oct'],
-                        ['tag' => 'Notice', 'title' => 'Saturday classes rescheduled', 'date' => 'Posted 1 Oct'],
-                    ] as $announcement)
-                        <a href="#" class="flex flex-col gap-1 border-t border-border-soft px-[22px] py-4 no-underline first:border-t-0">
-                            <span class="text-xs font-semibold tracking-[0.06em] text-plum-link uppercase">{{ $announcement['tag'] }}</span>
-                            <span class="text-[15px] font-semibold text-ink">{{ $announcement['title'] }}</span>
-                            <span class="text-[13px] text-subtle">{{ $announcement['date'] }}</span>
-                        </a>
-                    @endforeach
+                    <div class="px-[22px] py-6 text-center text-sm text-subtle">
+                        {{ __('No announcements yet.') }}
+                    </div>
                 </x-panel>
 
                 <x-panel :title="__('Latest updates')">
-                    @foreach ([
-                        ['text' => 'Admin Office requested a document on SC-2026-000119', 'time' => 'Today, 11:30 AM', 'dot' => '#C27A00'],
-                        ['text' => 'SC-2026-000124 moved to Under review', 'time' => 'Yesterday, 4:10 PM', 'dot' => '#2F6DB3'],
-                        ['text' => 'SC-2026-000091 was marked Resolved', 'time' => '2 Oct, 10:05 AM', 'dot' => '#2E8A4E'],
-                    ] as $update)
-                        <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
-                            <span class="mt-1.5 size-2 shrink-0 rounded-full" style="background: {{ $update['dot'] }}"></span>
-                            <div class="flex flex-col gap-0.5">
-                                <span class="text-sm leading-relaxed text-ink-soft">{{ $update['text'] }}</span>
-                                <span class="text-[13px] text-subtle">{{ $update['time'] }}</span>
+                    @if ($latestEvents->isEmpty())
+                        <div class="px-[22px] py-6 text-center text-sm text-subtle">{{ __('No activity yet.') }}</div>
+                    @else
+                        @foreach ($latestEvents as $event)
+                            <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
+                                <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-sm leading-relaxed text-ink-soft">{{ $event->description() }}</span>
+                                    <span class="text-[13px] text-subtle">{{ $event->created_at->diffForHumans() }}</span>
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    @endif
                 </x-panel>
             </aside>
         </div>
