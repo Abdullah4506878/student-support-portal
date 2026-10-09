@@ -1,22 +1,34 @@
 <x-layouts::auth :title="__('Register')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+        <x-auth-header :title="__('Create an account')" :description="__('Only Software Engineering students with a university email can register.')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">
             @csrf
+
             <!-- Name -->
             <flux:input
                 name="name"
-                :label="__('Name')"
+                :label="__('Full name')"
                 :value="old('name')"
                 type="text"
                 required
                 autofocus
                 autocomplete="name"
                 :placeholder="__('Full name')"
+            />
+
+            <!-- Registration No. -->
+            <flux:input
+                name="registration_no"
+                :label="__('Registration no.')"
+                :value="old('registration_no')"
+                type="text"
+                required
+                autocomplete="off"
+                placeholder="SU92-BSSEM-F22-171"
             />
 
             <!-- Email Address -->
@@ -29,6 +41,27 @@
                 autocomplete="email"
                 placeholder="name@superior.edu.pk"
             />
+
+            <!-- Program (fixed) -->
+            <flux:input
+                :label="__('Program')"
+                :value="config('students.default_program')"
+                disabled
+            />
+
+            <!-- Current Semester -->
+            <flux:select
+                name="current_semester"
+                :label="__('Current semester')"
+                :placeholder="__('Select your current semester')"
+                required
+            >
+                @foreach (range(1, 8) as $semester)
+                    <flux:select.option :value="(string) $semester" :selected="old('current_semester') == $semester">
+                        {{ $semester }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
 
             <!-- Password -->
             <flux:input

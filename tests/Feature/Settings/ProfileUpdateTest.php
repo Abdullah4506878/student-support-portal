@@ -3,6 +3,34 @@
 use App\Livewire\Settings\Profile;
 use App\Models\User;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+test('a student is redirected away from the shared settings profile page', function () {
+    createRoles();
+    $student = createStudentUser();
+
+    $this->actingAs($student)->get('/settings/profile')
+        ->assertRedirect(route('student.profile'));
+});
+
+test('a student cannot change their name or email through the shared settings profile page', function () {
+    createRoles();
+    $student = createStudentUser();
+    $originalName = $student->name;
+    $originalEmail = $student->email;
+
+    $this->actingAs($student);
+
+    $component = new Profile;
+    $component->name = 'Someone Else';
+    $component->email = 'someone-else@superior.edu.pk';
+
+    expect(fn () => $component->updateProfileInformation())
+        ->toThrow(HttpException::class);
+
+    expect($student->refresh()->name)->toBe($originalName);
+    expect($student->refresh()->email)->toBe($originalEmail);
+});
 
 test('profile page is displayed', function () {
     $this->actingAs($user = User::factory()->create());

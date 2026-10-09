@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Concerns\ProfileValidationRules;
+use App\Enums\RoleName;
 use Flux\Flux;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
@@ -20,10 +21,18 @@ class Profile extends Component
     public string $email = '';
 
     /**
-     * Mount the component.
+     * Mount the component. Students manage their academic profile at
+     * /student/profile instead — this page would let them change their
+     * name/email, bypassing the university email and verification rules.
      */
     public function mount(): void
     {
+        if (Auth::user()->hasRole(RoleName::Student->value)) {
+            $this->redirect(route('student.profile'), navigate: true);
+
+            return;
+        }
+
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
     }
@@ -34,6 +43,8 @@ class Profile extends Component
     public function updateProfileInformation(): void
     {
         $user = Auth::user();
+
+        abort_if($user->hasRole(RoleName::Student->value), 403);
 
         $validated = $this->validate($this->profileRules($user->id));
 

@@ -2,6 +2,7 @@
 
 use App\Enums\RoleName;
 use App\Http\Controllers\DashboardController;
+use App\Livewire\Student\Profile as StudentProfile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,6 +17,7 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::Student->value])
     ->prefix('student')->name('student.')
     ->group(function () {
         Route::view('dashboard', 'student.dashboard')->name('dashboard');
+        Route::livewire('profile', StudentProfile::class)->name('profile');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])

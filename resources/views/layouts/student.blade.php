@@ -84,8 +84,12 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
-                            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                                {{ __('Settings') }}
+                            <flux:menu.item :href="route('student.profile')" icon="user-circle" wire:navigate>
+                                {{ __('My Profile') }}
+                            </flux:menu.item>
+
+                            <flux:menu.item :href="route('security.edit')" icon="cog" wire:navigate>
+                                {{ __('Security') }}
                             </flux:menu.item>
 
                             <form method="POST" action="{{ route('logout') }}" class="w-full">
