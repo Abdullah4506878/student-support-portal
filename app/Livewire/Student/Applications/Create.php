@@ -13,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -93,14 +94,21 @@ class Create extends Component
             'attachments.*' => $this->attachmentRules(),
         ];
 
+        $messages = array_merge($this->applicationMessages(), $this->attachmentMessages($this->attachments));
+
         try {
-            $validated = $this->validate(
-                $rules,
-                $this->applicationMessages(),
-                $this->attachmentAttributeNames($this->attachments),
-            );
+            $validated = $this->validate($rules, $messages);
         } catch (\Throwable $e) {
             $this->submitting = false;
+
+            if ($e instanceof ValidationException) {
+                foreach ($this->invalidAttachmentIndexes($e->validator->errors()) as $index) {
+                    unset($this->attachments[$index]);
+                }
+
+                $this->attachments = array_values($this->attachments);
+            }
+
             throw $e;
         }
 

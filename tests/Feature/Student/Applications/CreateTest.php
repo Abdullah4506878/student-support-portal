@@ -98,14 +98,14 @@ test('a file with a disallowed type is rejected', function () {
         ->assertHasErrors(['attachments.0']);
 });
 
-test('a file larger than 5 mb shows a size message naming the file', function () {
+test('a file larger than 5 mb shows its size in mb and is dropped from the list', function () {
     $student = createStudentUser();
     $category = ApplicationCategory::factory()->create(['department_id' => $student->department_id]);
-    $file = UploadedFile::fake()->create('fee-challan.pdf', 8192, 'application/pdf');
+    $file = UploadedFile::fake()->create('fee-challan.pdf', 8800, 'application/pdf');
 
-    // 8 MB clears the temp-upload stage's own ceiling (9 MB) intact, so it
-    // reaches the component's submit-time validation and its own message.
-    Livewire::actingAs($student)
+    // 8.6 MB clears the temp-upload stage's own ceiling (9 MB) intact, so
+    // it reaches the component's submit-time validation and its message.
+    $component = Livewire::actingAs($student)
         ->test(Create::class)
         ->set('category_id', (string) $category->id)
         ->set('subject', 'Subject')
@@ -113,15 +113,17 @@ test('a file larger than 5 mb shows a size message naming the file', function ()
         ->set('attachments', [$file])
         ->call('submit')
         ->assertHasErrors(['attachments.0' => 'max'])
-        ->assertSee('fee-challan.pdf is larger than 5 MB. Please upload a smaller file.');
+        ->assertSee('fee-challan.pdf is 8.6 MB. Maximum size is 5 MB.');
+
+    expect($component->get('attachments'))->toBe([]);
 });
 
-test('a renamed text file shows a type message naming the file', function () {
+test('a renamed text file shows a type message and is dropped from the list', function () {
     $student = createStudentUser();
     $category = ApplicationCategory::factory()->create(['department_id' => $student->department_id]);
     $file = UploadedFile::fake()->create('resume.pdf', 10, 'text/plain');
 
-    Livewire::actingAs($student)
+    $component = Livewire::actingAs($student)
         ->test(Create::class)
         ->set('category_id', (string) $category->id)
         ->set('subject', 'Subject')
@@ -130,6 +132,28 @@ test('a renamed text file shows a type message naming the file', function () {
         ->call('submit')
         ->assertHasErrors(['attachments.0' => 'mimes'])
         ->assertSee('resume.pdf: only PDF, JPG, PNG, DOC or DOCX files are allowed.');
+
+    expect($component->get('attachments'))->toBe([]);
+});
+
+test('an invalid attachment is dropped while other valid attachments stay', function () {
+    $student = createStudentUser();
+    $category = ApplicationCategory::factory()->create(['department_id' => $student->department_id]);
+    $good = UploadedFile::fake()->create('good.pdf', 100, 'application/pdf');
+    $bad = UploadedFile::fake()->create('bad.pdf', 8800, 'application/pdf');
+
+    $component = Livewire::actingAs($student)
+        ->test(Create::class)
+        ->set('category_id', (string) $category->id)
+        ->set('subject', 'Subject')
+        ->set('body', 'Body of the application.')
+        ->set('attachments', [$good, $bad])
+        ->call('submit')
+        ->assertHasErrors(['attachments.1' => 'max']);
+
+    $remaining = $component->get('attachments');
+    expect($remaining)->toHaveCount(1);
+    expect($remaining[0]->getClientOriginalName())->toBe('good.pdf');
 });
 
 test('more than 3 attachments are rejected', function () {

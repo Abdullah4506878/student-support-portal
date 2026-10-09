@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Models\ApplicationCategory;
 use App\Models\Setting;
+use Illuminate\Contracts\Support\MessageBag;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -66,22 +67,49 @@ trait ApplicationValidationRules
     }
 
     /**
-     * Maps each "attachments.N" validation key to that file's own original
-     * name, so mimes/max messages can name the offending file instead of
-     * a generic ":attribute".
+     * Builds an exact, per-file mimes/max message naming the file and (for
+     * size) its actual size in MB, keyed by "attachments.N.rule" so it
+     * overrides any generic message for the same field.
      *
      * @param  array<int, TemporaryUploadedFile>  $files
      * @return array<string, string>
      */
-    protected function attachmentAttributeNames(array $files): array
+    protected function attachmentMessages(array $files): array
     {
-        $names = [];
+        $messages = [];
 
         foreach ($files as $index => $file) {
-            $names["attachments.{$index}"] = $file->getClientOriginalName();
+            $name = $file->getClientOriginalName();
+
+            $messages["attachments.{$index}.mimes"] = "{$name}: only PDF, JPG, PNG, DOC or DOCX files are allowed.";
+            $messages["attachments.{$index}.max"] = sprintf(
+                '%s is %s MB. Maximum size is 5 MB.',
+                $name,
+                number_format($file->getSize() / 1048576, 1),
+            );
         }
 
-        return $names;
+        return $messages;
+    }
+
+    /**
+     * Index (int) of each "attachments.N" key in a validator error bag —
+     * i.e. the files that failed their own mimes/max rule, as opposed to
+     * the "attachments" (count) key, which names no single file.
+     *
+     * @return array<int, int>
+     */
+    protected function invalidAttachmentIndexes(MessageBag $errors): array
+    {
+        $indexes = [];
+
+        foreach ($errors->keys() as $key) {
+            if (preg_match('/^attachments\.(\d+)$/', (string) $key, $matches)) {
+                $indexes[] = (int) $matches[1];
+            }
+        }
+
+        return $indexes;
     }
 
     /**
@@ -95,8 +123,6 @@ trait ApplicationValidationRules
             'subject.required' => __('Enter a subject.'),
             'body.required' => __('Describe your issue.'),
             'attachments.max' => __('You can attach up to 3 files.'),
-            'attachments.*.mimes' => __(':attribute: only PDF, JPG, PNG, DOC or DOCX files are allowed.'),
-            'attachments.*.max' => __(':attribute is larger than 5 MB. Please upload a smaller file.'),
         ];
     }
 }
