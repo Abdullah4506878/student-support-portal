@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Create an account')" :description="__('Only Software Engineering students with a university email can register.')" />
+    <x-auth-header :title="__('Create an account')" :description="__('Only students of the Software Engineering Department (BS SE, BS DS, BS AI) with a university email can register.')" />
 
     <form wire:submit="register" class="flex flex-col gap-6">
         <!-- Name -->
@@ -26,6 +26,9 @@
         </x-validated-field>
 
         <!-- Registration No. -->
+        @php
+            $registrationNoExample = config('students.registration_no_examples')[$program] ?? config('students.registration_no_examples')['BSSE'];
+        @endphp
         <x-validated-field>
             <div class="flex flex-col gap-1">
                 <flux:input
@@ -35,9 +38,9 @@
                     type="text"
                     required
                     autocomplete="off"
-                    placeholder="SU92-BSSEM-F22-171"
+                    :placeholder="$registrationNoExample"
                 />
-                <span class="text-xs text-subtle">{{ __('Format: SU92-BSSEM-F22-171') }}</span>
+                <span class="text-xs text-subtle">{{ __('Format: :example', ['example' => $registrationNoExample]) }}</span>
             </div>
         </x-validated-field>
 

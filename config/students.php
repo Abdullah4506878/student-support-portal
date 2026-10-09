@@ -50,4 +50,19 @@ return [
         'BSAI' => 'BS Artificial Intelligence',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Registration number examples
+    |--------------------------------------------------------------------------
+    |
+    | Shown as the field hint/placeholder, matching the selected program.
+    |
+    */
+
+    'registration_no_examples' => [
+        'BSSE' => 'SU92-BSSEM-F22-171',
+        'BSDS' => 'SU92-BSDSM-F23-045',
+        'BSAI' => 'SU92-BSAIM-F23-031',
+    ],
+
 ];

@@ -51,7 +51,7 @@ class Register extends Component
         // field, not password_confirmation.
         if ($property === 'password_confirmation') {
             if ($this->getErrorBag()->has('password')) {
-                $this->validateOnly('password', ['password' => $this->passwordRules()]);
+                $this->revalidate('password');
             }
 
             return;
@@ -73,7 +73,7 @@ class Register extends Component
         // The "confirmed" rule — and its error — lives on the password
         // field, not password_confirmation.
         if ($property === 'password_confirmation') {
-            $this->validateOnly('password', ['password' => $this->passwordRules()]);
+            $this->revalidate('password');
 
             return;
         }
@@ -86,7 +86,7 @@ class Register extends Component
         $rules = $this->rulesFor($property);
 
         if ($rules !== null) {
-            $this->validateOnly($property, [$property => $rules]);
+            $this->validateOnly($property, [$property => $rules], $this->registrationMessages());
         }
     }
 
@@ -108,7 +108,7 @@ class Register extends Component
         }
 
         if ($related === 'password_confirmation') {
-            $this->validateOnly('password', ['password' => $this->passwordRules()]);
+            $this->revalidate('password');
 
             return;
         }

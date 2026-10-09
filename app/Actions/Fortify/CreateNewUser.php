@@ -34,7 +34,7 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $this->emailRules($input['registration_no']),
             'current_semester' => $this->currentSemesterRules(),
             'password' => $this->passwordRules(),
-        ])->validate();
+        ], $this->registrationMessages())->validate();
 
         $pattern = config('students.registration_no_pattern');
         preg_match($pattern, $validated['registration_no'], $matches);

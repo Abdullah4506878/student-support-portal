@@ -70,7 +70,9 @@ test('registration is rejected when the email domain is wrong', function () {
         'email' => 'su92-bssem-f22-171@gmail.com',
     ]));
 
-    $response->assertSessionHasErrors('email');
+    $response->assertSessionHasErrors([
+        'email' => 'Use your university email ending in @superior.edu.pk.',
+    ]);
     $this->assertGuest();
 });
 

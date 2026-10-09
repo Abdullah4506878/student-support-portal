@@ -76,12 +76,18 @@ trait RegistrationValidationRules
             $unique = $unique->ignore($ignoreUserId);
         }
 
+        $domain = config('students.email_domain');
+
         $rules = [
             'required',
             'string',
             'email',
             'max:255',
-            'ends_with:'.config('students.email_domain'),
+            function (string $attribute, mixed $value, Closure $fail) use ($domain) {
+                if (! str_ends_with(strtolower((string) $value), strtolower($domain))) {
+                    $fail(__('Use your university email ending in :domain.', ['domain' => $domain]));
+                }
+            },
             $unique,
         ];
 
@@ -96,5 +102,28 @@ trait RegistrationValidationRules
         }
 
         return $rules;
+    }
+
+    /**
+     * Friendly overrides for the rules above that would otherwise fall
+     * back to Laravel's generic wording (unique, in, between, ...).
+     *
+     * @return array<string, string>
+     */
+    protected function registrationMessages(): array
+    {
+        return [
+            'name.required' => __('Enter your full name.'),
+            'program.required' => __('Select your program.'),
+            'program.in' => __('Select a valid program.'),
+            'current_semester.required' => __('Select your current semester.'),
+            'current_semester.between' => __('Select a semester between 1 and 8.'),
+            'registration_no.required' => __('Enter your registration number.'),
+            'registration_no.unique' => __('This registration number is already registered.'),
+            'email.required' => __('Enter your university email.'),
+            'email.email' => __('Enter a valid email address.'),
+            'email.unique' => __('This email is already registered.'),
+            'password.confirmed' => __('The passwords do not match.'),
+        ];
     }
 }
