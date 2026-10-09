@@ -3,7 +3,15 @@
 
     <x-card class="max-w-2xl">
         <div
-            x-data="{ subject: @js($subject), body: @js($body) }"
+            x-data="{
+                subject: @js($subject),
+                body: @js($body),
+                failedUploads: [],
+                onUploadError(event) {
+                    this.failedUploads = Array.from(event.target.files ?? []).map((file) => file.name);
+                },
+            }"
+            x-on:livewire-upload-error="onUploadError($event)"
             class="flex flex-col gap-5"
         >
             <x-validated-field>
@@ -47,17 +55,24 @@
             <x-validated-field>
                 <flux:field>
                     <flux:label>{{ __('Attachments (optional)') }}</flux:label>
-                    <flux:input type="file" wire:model="attachments" multiple />
+                    <flux:input type="file" wire:model="attachments" multiple x-on:livewire-upload-start="failedUploads = []" />
                     <flux:description>{{ __('PDF, JPG, PNG, DOC or DOCX. Up to 3 files, 5 MB each.') }}</flux:description>
                     <flux:error name="attachments" />
                 </flux:field>
             </x-validated-field>
 
+            <template x-for="name in failedUploads" :key="name">
+                <p class="text-sm font-medium text-red-600" x-text="name + ' {{ __('could not be uploaded. It may be too large.') }}'"></p>
+            </template>
+
             @if ($attachments)
                 <ul class="flex flex-col gap-1.5">
                     @foreach ($attachments as $index => $file)
                         <li class="flex items-center justify-between gap-3 rounded-lg border border-border-soft bg-page px-3 py-2 text-sm">
-                            <span class="truncate text-ink-soft">{{ $file->getClientOriginalName() }}</span>
+                            <span class="truncate text-ink-soft">
+                                {{ $file->getClientOriginalName() }}
+                                <span class="text-subtle">({{ \Illuminate\Support\Number::fileSize($file->getSize(), precision: 1) }})</span>
+                            </span>
                             <flux:button type="button" variant="ghost" size="sm" icon="x-mark" wire:click="removeAttachment({{ $index }})" />
                         </li>
                     @endforeach

@@ -98,20 +98,38 @@ test('a file with a disallowed type is rejected', function () {
         ->assertHasErrors(['attachments.0']);
 });
 
-test('a file larger than 5 mb is rejected', function () {
+test('a file larger than 5 mb shows a size message naming the file', function () {
     $student = createStudentUser();
     $category = ApplicationCategory::factory()->create(['department_id' => $student->department_id]);
-    $file = UploadedFile::fake()->create('big.pdf', 6000, 'application/pdf');
+    $file = UploadedFile::fake()->create('fee-challan.pdf', 8192, 'application/pdf');
 
-    // Rejected at the temporary-upload stage (Livewire's own 5 MB cap),
-    // before the component's own submit-time validation even runs.
+    // 8 MB clears the temp-upload stage's own ceiling (9 MB) intact, so it
+    // reaches the component's submit-time validation and its own message.
     Livewire::actingAs($student)
         ->test(Create::class)
         ->set('category_id', (string) $category->id)
         ->set('subject', 'Subject')
         ->set('body', 'Body of the application.')
         ->set('attachments', [$file])
-        ->assertHasErrors(['attachments.0']);
+        ->call('submit')
+        ->assertHasErrors(['attachments.0' => 'max'])
+        ->assertSee('fee-challan.pdf is larger than 5 MB. Please upload a smaller file.');
+});
+
+test('a renamed text file shows a type message naming the file', function () {
+    $student = createStudentUser();
+    $category = ApplicationCategory::factory()->create(['department_id' => $student->department_id]);
+    $file = UploadedFile::fake()->create('resume.pdf', 10, 'text/plain');
+
+    Livewire::actingAs($student)
+        ->test(Create::class)
+        ->set('category_id', (string) $category->id)
+        ->set('subject', 'Subject')
+        ->set('body', 'Body of the application.')
+        ->set('attachments', [$file])
+        ->call('submit')
+        ->assertHasErrors(['attachments.0' => 'mimes'])
+        ->assertSee('resume.pdf: only PDF, JPG, PNG, DOC or DOCX files are allowed.');
 });
 
 test('more than 3 attachments are rejected', function () {

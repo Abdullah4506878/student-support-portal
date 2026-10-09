@@ -11,8 +11,10 @@
                 x-data="{
                     touched: false,
                     valid: true,
+                    wrongDomain: false,
                     check(value) {
                         this.valid = value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                        this.wrongDomain = value !== '' && !value.trim().toLowerCase().endsWith('@superior.edu.pk');
                     },
                 }"
             >
@@ -29,6 +31,7 @@
                     x-on:input="if (touched) check($event.target.value)"
                 />
                 <p x-show="touched && !valid" class="mt-1 text-sm text-red-600">{{ __('Enter a valid email address.') }}</p>
+                <p x-show="touched && valid && wrongDomain" class="mt-1 text-sm text-amber-600">{{ __('Use your university email (@superior.edu.pk).') }}</p>
             </div>
 
             <flux:input

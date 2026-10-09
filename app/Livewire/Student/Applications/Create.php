@@ -94,7 +94,11 @@ class Create extends Component
         ];
 
         try {
-            $validated = $this->validate($rules, $this->applicationMessages());
+            $validated = $this->validate(
+                $rules,
+                $this->applicationMessages(),
+                $this->attachmentAttributeNames($this->attachments),
+            );
         } catch (\Throwable $e) {
             $this->submitting = false;
             throw $e;
