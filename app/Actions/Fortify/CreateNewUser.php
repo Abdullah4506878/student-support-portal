@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
+use App\Concerns\RegistrationValidationRules;
 use App\Enums\RoleName;
 use App\Enums\UserStatus;
 use App\Models\Department;
@@ -10,12 +11,11 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
-    use PasswordValidationRules;
+    use PasswordValidationRules, RegistrationValidationRules;
 
     /**
      * Validate and create a newly registered student account.
@@ -25,35 +25,20 @@ class CreateNewUser implements CreatesNewUsers
     public function create(array $input): User
     {
         $input['registration_no'] = strtoupper((string) ($input['registration_no'] ?? ''));
-
-        $pattern = config('students.registration_no_pattern');
+        $program = $input['program'] ?? null;
 
         $validated = Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                'ends_with:'.config('students.email_domain'),
-                Rule::unique(User::class),
-            ],
-            'registration_no' => [
-                'required',
-                'string',
-                'regex:'.$pattern,
-                Rule::unique(Student::class),
-            ],
-            'current_semester' => ['required', 'integer', 'between:1,8'],
+            'name' => $this->nameRules(),
+            'program' => $this->programRules(),
+            'registration_no' => $this->registrationNoRules($program),
+            'email' => $this->emailRules($input['registration_no']),
+            'current_semester' => $this->currentSemesterRules(),
             'password' => $this->passwordRules(),
-        ], [
-            'email.ends_with' => __('The email must be a university email ending with :domain.', ['domain' => config('students.email_domain')]),
-            'registration_no.regex' => __('The registration number format is invalid. Example: SU92-BSSEM-F22-171.'),
-            'registration_no.unique' => __('This registration number is already registered.'),
         ])->validate();
 
+        $pattern = config('students.registration_no_pattern');
         preg_match($pattern, $validated['registration_no'], $matches);
-        $batch = $matches[1];
+        $batch = $matches[2];
 
         $department = Department::query()->where('code', 'SE')->firstOrFail();
 
@@ -71,7 +56,7 @@ class CreateNewUser implements CreatesNewUsers
             Student::create([
                 'user_id' => $user->id,
                 'registration_no' => $validated['registration_no'],
-                'program' => config('students.default_program'),
+                'program' => config('students.programs')[$validated['program']],
                 'current_semester' => $validated['current_semester'],
                 'batch' => $batch,
             ]);

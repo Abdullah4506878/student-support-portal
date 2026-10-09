@@ -7,16 +7,29 @@
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-[18px]">
             @csrf
 
-            <flux:input
-                name="email"
-                :label="__('University email')"
-                :value="old('email')"
-                type="email"
-                required
-                autofocus
-                autocomplete="email"
-                placeholder="name@superior.edu.pk"
-            />
+            <div
+                x-data="{
+                    touched: false,
+                    valid: true,
+                    check(value) {
+                        this.valid = value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                    },
+                }"
+            >
+                <flux:input
+                    name="email"
+                    :label="__('University email')"
+                    :value="old('email')"
+                    type="email"
+                    required
+                    autofocus
+                    autocomplete="email"
+                    placeholder="name@superior.edu.pk"
+                    x-on:blur="touched = true; check($event.target.value)"
+                    x-on:input="if (touched) check($event.target.value)"
+                />
+                <p x-show="touched && !valid" class="mt-1 text-sm text-red-600">{{ __('Enter a valid email address.') }}</p>
+            </div>
 
             <flux:input
                 name="password"

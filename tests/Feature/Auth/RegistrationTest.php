@@ -16,8 +16,9 @@ function validRegistrationData(array $overrides = []): array
 {
     return array_merge([
         'name' => 'Ayesha Khan',
+        'program' => 'BSSE',
         'registration_no' => 'SU92-BSSEM-F22-171',
-        'email' => 'ayesha.khan@superior.edu.pk',
+        'email' => 'su92-bssem-f22-171@superior.edu.pk',
         'current_semester' => '5',
         'password' => 'password',
         'password_confirmation' => 'password',
@@ -38,7 +39,7 @@ test('a student can register with valid data', function () {
 
     $this->assertAuthenticated();
 
-    $user = User::query()->where('email', 'ayesha.khan@superior.edu.pk')->firstOrFail();
+    $user = User::query()->where('email', 'su92-bssem-f22-171@superior.edu.pk')->firstOrFail();
 
     expect($user->status)->toBe(UserStatus::PendingVerification);
     expect($user->hasRole('student'))->toBeTrue();
@@ -47,7 +48,7 @@ test('a student can register with valid data', function () {
     $student = $user->student;
     expect($student)->not->toBeNull();
     expect($student->registration_no)->toBe('SU92-BSSEM-F22-171');
-    expect($student->program)->toBe(config('students.default_program'));
+    expect($student->program)->toBe('BS Software Engineering');
     expect($student->current_semester)->toBe(5);
     expect($student->batch)->toBe('F22');
 });
@@ -55,10 +56,10 @@ test('a student can register with valid data', function () {
 test('registration number is uppercased and email is lowercased before storing', function () {
     $this->post(route('register.store'), validRegistrationData([
         'registration_no' => 'su92-bssem-f22-171',
-        'email' => 'Ayesha.Khan@SUPERIOR.EDU.PK',
+        'email' => 'SU92-BSSEM-F22-171@SUPERIOR.EDU.PK',
     ]))->assertSessionHasNoErrors();
 
-    $user = User::query()->where('email', 'ayesha.khan@superior.edu.pk')->first();
+    $user = User::query()->where('email', 'su92-bssem-f22-171@superior.edu.pk')->first();
 
     expect($user)->not->toBeNull();
     expect($user->student->registration_no)->toBe('SU92-BSSEM-F22-171');
@@ -66,7 +67,16 @@ test('registration number is uppercased and email is lowercased before storing',
 
 test('registration is rejected when the email domain is wrong', function () {
     $response = $this->post(route('register.store'), validRegistrationData([
-        'email' => 'ayesha.khan@gmail.com',
+        'email' => 'su92-bssem-f22-171@gmail.com',
+    ]));
+
+    $response->assertSessionHasErrors('email');
+    $this->assertGuest();
+});
+
+test('registration is rejected when the email does not match the registration number', function () {
+    $response = $this->post(route('register.store'), validRegistrationData([
+        'email' => 'someone-else@superior.edu.pk',
     ]));
 
     $response->assertSessionHasErrors('email');
@@ -82,8 +92,17 @@ test('registration is rejected when the registration number format is wrong', fu
     $this->assertGuest();
 });
 
+test('registration is rejected when the registration number program code does not match the selected program', function () {
+    $response = $this->post(route('register.store'), validRegistrationData([
+        'program' => 'BSDS',
+    ]));
+
+    $response->assertSessionHasErrors('registration_no');
+    $this->assertGuest();
+});
+
 test('registration is rejected when the email is already taken', function () {
-    User::factory()->create(['email' => 'ayesha.khan@superior.edu.pk']);
+    User::factory()->create(['email' => 'su92-bssem-f22-171@superior.edu.pk']);
 
     $response = $this->post(route('register.store'), validRegistrationData());
 
@@ -95,9 +114,7 @@ test('registration is rejected when the registration number is already taken', f
     $existing = createStudentUser();
     $existing->student->update(['registration_no' => 'SU92-BSSEM-F22-171']);
 
-    $response = $this->post(route('register.store'), validRegistrationData([
-        'email' => 'someone-else@superior.edu.pk',
-    ]));
+    $response = $this->post(route('register.store'), validRegistrationData());
 
     $response->assertSessionHasErrors('registration_no');
     $this->assertGuest();
@@ -116,14 +133,14 @@ test('registration is rate limited to 20 attempts per minute per ip', function (
     for ($i = 0; $i < 20; $i++) {
         $this->post(route('register.store'), validRegistrationData([
             'registration_no' => sprintf('SU92-BSSEM-F22-%d', $i + 1),
-            'email' => "user{$i}@superior.edu.pk",
+            'email' => sprintf('su92-bssem-f22-%d@superior.edu.pk', $i + 1),
         ]));
         $this->post(route('logout'));
     }
 
     $response = $this->post(route('register.store'), validRegistrationData([
         'registration_no' => 'SU92-BSSEM-F22-999',
-        'email' => 'one-too-many@superior.edu.pk',
+        'email' => 'su92-bssem-f22-999@superior.edu.pk',
     ]));
 
     $response->assertStatus(429);

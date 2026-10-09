@@ -7,12 +7,13 @@ return [
     | Registration number format
     |--------------------------------------------------------------------------
     |
-    | Example: SU92-BSSEM-F22-171. The third segment ([FS]\d{2}) is also
-    | the student's batch code (F22 = Fall 2022, S23 = Spring 2023).
+    | Example: SU92-BSSEM-F22-171. Capture group 1 is the program code
+    | (must match the selected program), group 2 is the batch code
+    | (F22 = Fall 2022, S23 = Spring 2023).
     |
     */
 
-    'registration_no_pattern' => env('STUDENT_REGISTRATION_NO_PATTERN', '/^SU\d{2}-BSSE[ME]-([FS]\d{2})-\d{1,4}$/'),
+    'registration_no_pattern' => env('STUDENT_REGISTRATION_NO_PATTERN', '/^SU\d{2}-(BSSE|BSDS|BSAI)[ME]-([FS]\d{2})-\d{1,4}$/'),
 
     /*
     |--------------------------------------------------------------------------
@@ -24,13 +25,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default program
+    | Email must match registration number
     |--------------------------------------------------------------------------
     |
-    | Fixed for Phase 1 — shown on registration but not editable.
+    | When enabled, the university email must be the lowercased
+    | registration number plus the email domain above.
     |
     */
 
-    'default_program' => env('STUDENT_DEFAULT_PROGRAM', 'BS Software Engineering'),
+    'enforce_email_matches_registration_no' => env('STUDENT_EMAIL_MATCHES_REGISTRATION_NO', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Programs
+    |--------------------------------------------------------------------------
+    |
+    | Code => label. The code must appear in the registration number.
+    |
+    */
+
+    'programs' => [
+        'BSSE' => 'BS Software Engineering',
+        'BSDS' => 'BS Data Science',
+        'BSAI' => 'BS Artificial Intelligence',
+    ],
 
 ];
