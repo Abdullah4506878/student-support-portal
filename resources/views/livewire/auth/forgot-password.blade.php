@@ -1,21 +1,21 @@
 <x-layouts::auth :title="__('Forgot password')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Forgot password')" :description="__('Enter your email to receive a password reset link')" />
+        <x-auth-header :title="__('Forgot your password?')" :description="__('Enter your university email and we will send you a link to reset it.')" />
 
-        <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
         <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-6">
             @csrf
 
-            <!-- Email Address -->
             <flux:input
                 name="email"
-                :label="__('Email address')"
+                :label="__('University email')"
+                :value="old('email')"
                 type="email"
                 required
                 autofocus
-                placeholder="email@example.com"
+                autocomplete="email"
+                placeholder="name@superior.edu.pk"
             />
 
             <flux:button variant="primary" type="submit" class="w-full" data-test="email-password-reset-link-button">

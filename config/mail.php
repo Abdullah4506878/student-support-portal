@@ -115,4 +115,22 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | No-Reply Settings
+    |--------------------------------------------------------------------------
+    |
+    | Applied to every outgoing notification email so students know replies
+    | to it go nowhere. This is infrastructure only: it has no bearing on
+    | whether mail is actually delivered, which is controlled by MAIL_MAILER.
+    |
+    */
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS', 'noreply@superior.edu.pk'),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+    ],
+
+    'subject_prefix' => '[SE Student Support]',
+
 ];

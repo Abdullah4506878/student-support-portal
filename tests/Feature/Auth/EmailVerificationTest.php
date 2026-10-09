@@ -15,7 +15,19 @@ test('email verification screen can be rendered', function () {
 
     $response = $this->actingAs($user)->get(route('verification.notice'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertSee('Check your university email')
+        ->assertSee($user->email)
+        ->assertSee("Can't find it? Check your spam folder.");
+});
+
+test('resending the verification email shows a confirmation message', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->post(route('verification.send'))->assertRedirect();
+
+    $this->get(route('verification.notice'))
+        ->assertSee('A new verification link has been sent.');
 });
 
 test('unverified users are redirected to the email verification prompt', function () {

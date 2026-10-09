@@ -38,7 +38,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <dt class="text-xs font-semibold tracking-[0.06em] text-subtle uppercase">{{ __('Batch') }}</dt>
-                    <dd class="m-0 text-[15px] font-semibold">{{ auth()->user()->student?->batch }}</dd>
+                    <dd class="m-0 text-[15px] font-semibold">{{ auth()->user()->student?->batch_label }}</dd>
                 </div>
                 <div class="flex flex-col gap-1">
                     <dt class="text-xs font-semibold tracking-[0.06em] text-subtle uppercase">{{ __('Email') }}</dt>
