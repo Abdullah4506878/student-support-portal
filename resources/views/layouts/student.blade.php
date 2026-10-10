@@ -52,14 +52,7 @@
             <flux:spacer class="lg:hidden" />
 
             <div class="ms-auto flex items-center gap-2">
-                <a
-                    href="{{ Route::has('student.notifications.index') ? route('student.notifications.index') : '#' }}"
-                    wire:navigate
-                    aria-label="{{ __('Notifications') }}"
-                    class="flex size-11 items-center justify-center rounded-xl text-white no-underline hover:bg-white/10"
-                >
-                    <flux:icon icon="bell" variant="outline" class="size-5.5" />
-                </a>
+                <livewire:notifications.bell />
 
                 <flux:dropdown position="bottom" align="end">
                     <button type="button" class="flex min-h-11 items-center gap-2.5 rounded-xl bg-white/12 py-1 pr-2 pl-1 text-white" data-test="user-menu-button">

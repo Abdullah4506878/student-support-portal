@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\RoleName;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -127,5 +129,19 @@ class User extends Authenticatable implements MustVerifyEmail
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
             : $initials;
+    }
+
+    /**
+     * Every Admin Officer in the given department — who to notify about
+     * department-scoped application activity.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    public static function adminOfficersInDepartment(int $departmentId): EloquentCollection
+    {
+        return User::query()
+            ->where('department_id', $departmentId)
+            ->role(RoleName::AdminOfficer->value)
+            ->get();
     }
 }

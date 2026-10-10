@@ -163,14 +163,7 @@
 
             <flux:spacer />
 
-            <a
-                href="{{ Route::has($routePrefix.'notifications.index') ? route($routePrefix.'notifications.index') : '#' }}"
-                wire:navigate
-                aria-label="{{ __('Notifications') }}"
-                class="flex size-11 items-center justify-center rounded-xl border border-border text-ink-soft no-underline hover:bg-page"
-            >
-                <flux:icon icon="bell" variant="outline" class="size-5" />
-            </a>
+            <livewire:notifications.bell variant="light" />
         </flux:header>
 
         <flux:main container>

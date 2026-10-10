@@ -10,6 +10,12 @@ use App\Models\Application;
 use App\Models\ApplicationEvent;
 use App\Models\ApplicationMessage;
 use App\Models\InternalNote;
+use App\Notifications\AdminMessageReceived;
+use App\Notifications\ApplicationClosed;
+use App\Notifications\ApplicationInfoRequested;
+use App\Notifications\ApplicationRejected;
+use App\Notifications\ApplicationResolved;
+use App\Notifications\ApplicationStatusChanged;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -195,6 +201,8 @@ class Show extends Component
 
         unset($this->timeline, $this->hasOpenRequest);
 
+        $this->application->student->user->notify(new ApplicationStatusChanged($this->application, $this->application->status));
+
         $this->modal('confirm-update-status')->close();
         Flux::toast(variant: 'success', text: __('Status updated.'));
     }
@@ -229,6 +237,8 @@ class Show extends Component
 
         unset($this->timeline, $this->hasOpenRequest);
 
+        $this->application->student->user->notify(new ApplicationResolved($this->application, $validated));
+
         $this->modal('confirm-resolve')->close();
         Flux::toast(variant: 'success', text: __('Application marked resolved.'));
     }
@@ -262,6 +272,8 @@ class Show extends Component
 
         unset($this->timeline, $this->hasOpenRequest);
 
+        $this->application->student->user->notify(new ApplicationRejected($this->application, $validated));
+
         $this->modal('confirm-reject')->close();
         Flux::toast(variant: 'success', text: __('Application rejected.'));
     }
@@ -291,6 +303,8 @@ class Show extends Component
 
         unset($this->timeline, $this->hasOpenRequest);
 
+        $this->application->student->user->notify(new ApplicationClosed($this->application));
+
         $this->modal('confirm-close')->close();
         Flux::toast(variant: 'success', text: __('Application closed.'));
     }
@@ -314,7 +328,8 @@ class Show extends Component
         $this->message_body = '';
         unset($this->timeline);
 
-        // Notifications: Milestone 9.
+        $this->application->student->user->notify(new AdminMessageReceived($this->application, $validated));
+
         Flux::toast(variant: 'success', text: __('Message sent.'));
     }
 
@@ -355,7 +370,8 @@ class Show extends Component
         $this->request_body = '';
         unset($this->timeline, $this->hasOpenRequest);
 
-        // Notifications: Milestone 9.
+        $this->application->student->user->notify(new ApplicationInfoRequested($this->application, $type, $validated));
+
         $this->modal($modalName)->close();
         Flux::toast(variant: 'success', text: $successMessage);
     }

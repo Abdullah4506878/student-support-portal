@@ -9,12 +9,15 @@ use App\Models\Application;
 use App\Models\ApplicationAttachment;
 use App\Models\ApplicationEvent;
 use App\Models\ApplicationMessage;
+use App\Models\User;
+use App\Notifications\StudentRespondedToRequest;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -152,7 +155,11 @@ class Show extends Component
         $this->response_attachments = [];
         unset($this->openRequest, $this->timeline);
 
-        // Notifications: Milestone 9.
+        Notification::send(
+            User::adminOfficersInDepartment($this->application->department_id),
+            new StudentRespondedToRequest($this->application),
+        );
+
         Flux::toast(variant: 'success', text: __('Response sent.'));
     }
 

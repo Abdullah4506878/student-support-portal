@@ -8,11 +8,15 @@ use App\Models\Application;
 use App\Models\ApplicationAttachment;
 use App\Models\ApplicationCategory;
 use App\Models\ApplicationEvent;
+use App\Models\User;
+use App\Notifications\ApplicationSubmitted;
+use App\Notifications\NewApplicationSubmitted;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -144,6 +148,9 @@ class Create extends Component
 
             return $application;
         });
+
+        Auth::user()->notify(new ApplicationSubmitted($application));
+        Notification::send(User::adminOfficersInDepartment($application->department_id), new NewApplicationSubmitted($application));
 
         Flux::toast(variant: 'success', text: __('Application submitted.'));
 

@@ -9,6 +9,7 @@ use App\Livewire\Admin\Applications\Index as AdminApplicationsIndex;
 use App\Livewire\Admin\Applications\Show as AdminApplicationsShow;
 use App\Livewire\Admin\Students\Index as AdminStudentsIndex;
 use App\Livewire\Admin\Students\Show as AdminStudentsShow;
+use App\Livewire\Notifications\Index as NotificationsIndex;
 use App\Livewire\Student\Applications\Create as ApplicationsCreate;
 use App\Livewire\Student\Applications\Index as ApplicationsIndex;
 use App\Livewire\Student\Applications\Show as ApplicationsShow;
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::Student->value])
         Route::livewire('applications', ApplicationsIndex::class)->name('applications.index');
         Route::livewire('applications/create', ApplicationsCreate::class)->name('applications.create');
         Route::livewire('applications/{application}', ApplicationsShow::class)->name('applications.show');
+
+        Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])
@@ -47,6 +50,8 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])
 
         Route::livewire('students', AdminStudentsIndex::class)->name('students.index');
         Route::livewire('students/{student}', AdminStudentsShow::class)->name('students.show');
+
+        Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::SuperAdmin->value])
