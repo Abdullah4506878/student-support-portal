@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\ApplicationStatus;
+use App\Enums\MessageType;
 use App\Livewire\Admin\Applications\Index;
+use App\Livewire\Admin\Applications\Show;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationMessage;
 use App\Models\Department;
 use Livewire\Livewire;
 
@@ -183,4 +186,42 @@ test('status filter narrows the results', function () {
         ->set('status', 'resolved')
         ->assertSee('Resolved one')
         ->assertDontSee('Submitted one');
+});
+
+test('an application with an unread student response shows a new response badge', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $application = createApplicationInDepartment($department, $student);
+
+    ApplicationMessage::create([
+        'application_id' => $application->id,
+        'sender_id' => $student->id,
+        'type' => MessageType::StudentResponse->value,
+        'body' => 'Here is my response.',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->assertSee('New response');
+});
+
+test('the new response badge disappears once the admin has opened the application', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $application = createApplicationInDepartment($department, $student);
+
+    ApplicationMessage::create([
+        'application_id' => $application->id,
+        'sender_id' => $student->id,
+        'type' => MessageType::StudentResponse->value,
+        'body' => 'Here is my response.',
+    ]);
+
+    Livewire::actingAs($admin)->test(Show::class, ['application' => $application]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->assertDontSee('New response');
 });

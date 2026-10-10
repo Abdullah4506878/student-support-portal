@@ -96,7 +96,7 @@ class Index extends Component
     public function applications(): LengthAwarePaginator
     {
         $query = Application::query()
-            ->with(['category', 'student.user'])
+            ->with(['category', 'student.user', 'unreadStudentResponses'])
             ->when($this->search !== '', function (Builder $query) {
                 $query->where(function (Builder $query) {
                     $query->where('application_no', 'like', '%'.$this->search.'%')

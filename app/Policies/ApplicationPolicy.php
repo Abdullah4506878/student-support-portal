@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ApplicationStatus;
 use App\Enums\RoleName;
 use App\Enums\UserStatus;
 use App\Models\Application;
@@ -36,7 +37,26 @@ class ApplicationPolicy
     public function respondToRequest(User $user, Application $application): bool
     {
         return $user->hasRole(RoleName::Student->value)
-            && $user->student?->id === $application->student_id;
+            && $user->student?->id === $application->student_id
+            && ! $this->isFinal($application);
+    }
+
+    /**
+     * A free-text message, from the Admin Officer/Super Admin managing
+     * this application, any time it isn't closed/rejected.
+     */
+    public function sendMessage(User $user, Application $application): bool
+    {
+        return $this->manages($user, $application) && ! $this->isFinal($application);
+    }
+
+    /**
+     * Sending an info or document request — same rule as sendMessage;
+     * kept as a separate ability name since it's a distinct action.
+     */
+    public function sendRequest(User $user, Application $application): bool
+    {
+        return $this->sendMessage($user, $application);
     }
 
     public function updateStatus(User $user, Application $application): bool
@@ -89,5 +109,10 @@ class ApplicationPolicy
 
         return $user->hasRole(RoleName::AdminOfficer->value)
             && $user->department_id === $application->department_id;
+    }
+
+    private function isFinal(Application $application): bool
+    {
+        return in_array($application->status, [ApplicationStatus::Closed, ApplicationStatus::Rejected], true);
     }
 }

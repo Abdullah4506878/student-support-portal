@@ -6,9 +6,16 @@ use App\Enums\MessageType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
+/**
+ * @property MessageType $type
+ */
 class ApplicationMessage extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'application_id',
         'sender_id',
@@ -17,6 +24,7 @@ class ApplicationMessage extends Model
         'body',
         'read_at',
         'responded_at',
+        'cancelled_at',
     ];
 
     protected function casts(): array
@@ -25,15 +33,22 @@ class ApplicationMessage extends Model
             'type' => MessageType::class,
             'read_at' => 'datetime',
             'responded_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logOnly(['type', 'body']);
+    }
+
     /**
-     * A request (info_request / document_request) is open while this is null.
+     * A request (info_request / document_request) is open while it has
+     * neither been answered nor auto-cancelled by a status change.
      */
     public function isOpen(): bool
     {
-        return $this->responded_at === null;
+        return $this->responded_at === null && $this->cancelled_at === null;
     }
 
     /**

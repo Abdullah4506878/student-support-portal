@@ -2,8 +2,10 @@
 
 use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
+use App\Enums\MessageType;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationMessage;
 use App\Models\Department;
 
 beforeEach(function () {
@@ -46,5 +48,35 @@ test('the dashboard shows real kpi counts scoped to the admin\'s department', fu
     $response->assertOk();
     $response->assertViewHas('stats', function (array $stats) {
         return $stats['new'] === 1 && $stats['in_progress'] === 1 && $stats['urgent'] === 1;
+    });
+});
+
+test('an application with an unread student response appears in needs attention', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+
+    $application = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'status' => ApplicationStatus::UnderReview,
+        'priority' => ApplicationPriority::Normal,
+        'updated_at' => now(),
+    ]);
+
+    ApplicationMessage::create([
+        'application_id' => $application->id,
+        'sender_id' => $student->id,
+        'type' => MessageType::StudentResponse->value,
+        'body' => 'Here is my response.',
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+    $response->assertOk();
+    $response->assertViewHas('needsAttention', function ($needsAttention) use ($application) {
+        return $needsAttention->contains('id', $application->id);
     });
 });

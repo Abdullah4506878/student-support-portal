@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\RoleName;
+use App\Models\Application;
+use App\Models\ApplicationCategory;
 use App\Models\Department;
 use App\Models\Student;
 use App\Models\User;
@@ -97,4 +99,19 @@ function createSuperAdmin(): User
     $user->assignRole(RoleName::SuperAdmin->value);
 
     return $user;
+}
+
+/**
+ * An application for the given student, in a fresh category of the
+ * given department.
+ */
+function createApplicationInDepartment(Department $department, User $student): Application
+{
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+
+    return Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+    ]);
 }

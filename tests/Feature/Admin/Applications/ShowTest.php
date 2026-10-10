@@ -4,8 +4,6 @@ use App\Enums\ApplicationEventType;
 use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
 use App\Livewire\Admin\Applications\Show;
-use App\Models\Application;
-use App\Models\ApplicationCategory;
 use App\Models\ApplicationEvent;
 use App\Models\Department;
 use App\Models\InternalNote;
@@ -14,17 +12,6 @@ use Livewire\Livewire;
 beforeEach(function () {
     createRoles();
 });
-
-function createApplicationInDepartment(Department $department, $student): Application
-{
-    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
-
-    return Application::factory()->create([
-        'student_id' => $student->student->id,
-        'department_id' => $department->id,
-        'category_id' => $category->id,
-    ]);
-}
 
 test('an admin officer can view an application in their own department', function () {
     $department = Department::factory()->create();

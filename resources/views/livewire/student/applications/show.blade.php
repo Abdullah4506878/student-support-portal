@@ -61,26 +61,79 @@
             @endif
 
             <x-panel :title="__('Messages')">
-                <div class="px-[22px] py-6 text-center text-sm text-subtle">
-                    {{ __('Messaging with the Admin Office is not available yet.') }}
-                </div>
+                @if ($application->status === \App\Enums\ApplicationStatus::InfoRequired && $this->openRequest)
+                    <div class="mx-[22px] mt-5 flex items-start gap-3 rounded-[14px] border border-[#F1D9A6] bg-[#FFF7E8] px-5 py-4">
+                        <flux:icon icon="exclamation-circle" variant="outline" class="mt-0.5 size-5 shrink-0 text-[#8A5300]" />
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[15px] font-bold text-[#5C3A00]">{{ __('Action required') }}</span>
+                            <span class="text-sm leading-relaxed text-[#6E4A10]">{{ $this->openRequest->body }}</span>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($this->openRequest)
+                    <div
+                        x-data="{ response: @js($response_body) }"
+                        class="flex flex-col gap-3 px-[22px] py-5"
+                    >
+                        <flux:textarea
+                            wire:model="response_body"
+                            x-model="response"
+                            :label="__('Your response')"
+                            rows="4"
+                            maxlength="{{ $this->responseMaxLength() }}"
+                            :placeholder="__('Reply to the Admin Office\'s request.')"
+                        />
+                        <div class="flex items-center justify-between">
+                            <flux:error name="response_body" />
+                            <span class="self-end text-xs text-subtle" x-text="response.length + ' / {{ $this->responseMaxLength() }}'"></span>
+                        </div>
+
+                        <flux:input type="file" wire:model="response_attachments" multiple />
+                        <flux:description>{{ __('PDF, JPG, PNG, DOC or DOCX. Up to 3 files, 5 MB each.') }}</flux:description>
+
+                        @if ($response_attachments)
+                            <ul class="flex flex-col gap-1.5">
+                                @foreach ($response_attachments as $index => $file)
+                                    <li class="flex items-center justify-between gap-3 rounded-lg border border-border-soft bg-page px-3 py-2 text-sm">
+                                        <span class="truncate text-ink-soft">
+                                            {{ $file->getClientOriginalName() }}
+                                            <span class="text-subtle">({{ \Illuminate\Support\Number::fileSize($file->getSize(), precision: 1) }})</span>
+                                        </span>
+                                        <flux:button type="button" variant="ghost" size="sm" icon="x-mark" wire:click="removeResponseAttachment({{ $index }})" />
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+
+                        <flux:button variant="primary" class="self-end" wire:click="respond">{{ __('Send response') }}</flux:button>
+                    </div>
+                @else
+                    <div class="px-[22px] py-6 text-center text-sm text-subtle">
+                        {{ __('There is no open request from the Admin Office right now.') }}
+                    </div>
+                @endif
             </x-panel>
         </div>
 
         <aside class="flex min-w-0 flex-1 basis-80 flex-col gap-6">
             <x-panel :title="__('Timeline')">
-                @if ($application->events->isEmpty())
+                @if ($this->timeline->isEmpty())
                     <div class="px-[22px] py-6 text-center text-sm text-subtle">{{ __('No activity yet.') }}</div>
                 @else
                     <div class="flex flex-col">
-                        @foreach ($application->events as $event)
-                            <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
-                                <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
-                                <div class="flex flex-col gap-0.5">
-                                    <span class="text-sm leading-relaxed text-ink-soft">{{ $event->timelineDescription() }}</span>
-                                    <span class="text-[13px] text-subtle">{{ $event->created_at->format('j M Y, g:i A') }}</span>
+                        @foreach ($this->timeline as $item)
+                            @if ($item instanceof \App\Models\ApplicationEvent)
+                                <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
+                                    <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-sm leading-relaxed text-ink-soft">{{ $item->timelineDescription() }}</span>
+                                        <span class="text-[13px] text-subtle">{{ $item->created_at->format('j M Y, g:i A') }}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            @else
+                                <x-message-timeline-item :message="$item" />
+                            @endif
                         @endforeach
                     </div>
                 @endif

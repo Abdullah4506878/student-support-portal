@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
+use App\Enums\MessageType;
 use App\Models\Concerns\ScopedToAdminDepartment;
 use Database\Factories\ApplicationFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -128,6 +129,19 @@ class Application extends Model
     public function internalNotes(): HasMany
     {
         return $this->hasMany(InternalNote::class);
+    }
+
+    /**
+     * Student responses the admin hasn't opened this application to see
+     * yet — drives the "New response" badge and dashboard attention list.
+     *
+     * @return HasMany<ApplicationMessage, $this>
+     */
+    public function unreadStudentResponses(): HasMany
+    {
+        return $this->messages()
+            ->where('type', MessageType::StudentResponse->value)
+            ->whereNull('read_at');
     }
 
     /**

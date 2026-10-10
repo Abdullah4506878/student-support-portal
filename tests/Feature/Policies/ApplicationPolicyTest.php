@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ApplicationStatus;
 use App\Enums\UserStatus;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
@@ -117,4 +118,72 @@ test('applications can never be deleted, by anyone', function () {
     $superAdmin = createSuperAdmin();
 
     expect($superAdmin->can('delete', $application))->toBeFalse();
+});
+
+test('an admin officer can send a message or a request on an open application in their own department', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+    $application = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+    ]);
+
+    expect($admin->can('sendMessage', $application))->toBeTrue();
+    expect($admin->can('sendRequest', $application))->toBeTrue();
+});
+
+test('a student can never send a message or a request', function () {
+    $department = Department::factory()->create();
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+    $application = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+    ]);
+
+    expect($student->can('sendMessage', $application))->toBeFalse();
+    expect($student->can('sendRequest', $application))->toBeFalse();
+});
+
+test('sending a message or a request is blocked once the application is closed or rejected', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+
+    $closed = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'status' => ApplicationStatus::Closed,
+    ]);
+    $rejected = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'status' => ApplicationStatus::Rejected,
+    ]);
+
+    expect($admin->can('sendMessage', $closed))->toBeFalse();
+    expect($admin->can('sendRequest', $closed))->toBeFalse();
+    expect($admin->can('sendMessage', $rejected))->toBeFalse();
+    expect($admin->can('sendRequest', $rejected))->toBeFalse();
+});
+
+test('responding to a request is blocked once the application is closed or rejected', function () {
+    $department = Department::factory()->create();
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+    $closed = Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'status' => ApplicationStatus::Closed,
+    ]);
+
+    expect($student->can('respondToRequest', $closed))->toBeFalse();
 });

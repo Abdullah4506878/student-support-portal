@@ -94,7 +94,12 @@
                             <tr class="border-t border-border-soft">
                                 <td class="px-[22px] py-3.5">
                                     <a href="{{ route('admin.applications.show', $application) }}" wire:navigate class="flex flex-col gap-0.5 no-underline">
-                                        <span class="font-semibold text-ink">{{ $application->subject }}</span>
+                                        <span class="flex items-center gap-2">
+                                            <span class="font-semibold text-ink">{{ $application->subject }}</span>
+                                            @if ($application->unreadStudentResponses->isNotEmpty())
+                                                <flux:badge color="amber" size="sm">{{ __('New response') }}</flux:badge>
+                                            @endif
+                                        </span>
                                         <span class="text-[13px] text-subtle tabular-nums">{{ $application->application_no }} &middot; {{ $application->category->name }}</span>
                                     </a>
                                 </td>

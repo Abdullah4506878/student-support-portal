@@ -111,9 +111,86 @@
             @endif
 
             <x-panel :title="__('Messages')">
-                <div class="px-[22px] py-6 text-center text-sm text-subtle">
-                    {{ __('Messaging with the student is not available yet.') }}
-                </div>
+                @if ($this->isFinal)
+                    <div class="px-[22px] py-6 text-center text-sm text-subtle">
+                        {{ __('This application is :status. No further messages can be sent.', ['status' => \Illuminate\Support\Str::headline($application->status->value)]) }}
+                    </div>
+                @else
+                    <div
+                        x-data="{
+                            message: @js($message_body),
+                            request: @js($request_body),
+                        }"
+                        class="flex flex-col gap-5 px-[22px] py-5"
+                    >
+                        <div class="flex flex-col gap-2">
+                            <flux:textarea
+                                wire:model="message_body"
+                                x-model="message"
+                                :label="__('Send a message')"
+                                rows="3"
+                                maxlength="{{ $this->messageMaxLength() }}"
+                                :placeholder="__('Write a free-text message to the student.')"
+                            />
+                            <div class="flex items-center justify-between">
+                                <flux:error name="message_body" />
+                                <span class="self-end text-xs text-subtle" x-text="message.length + ' / {{ $this->messageMaxLength() }}'"></span>
+                            </div>
+                            <flux:button variant="primary" class="self-end" wire:click="sendMessage">{{ __('Send message') }}</flux:button>
+                        </div>
+
+                        <flux:separator />
+
+                        @if ($this->hasOpenRequest)
+                            <div class="rounded-[10px] border border-[#F1D9A6] bg-[#FFF7E8] px-4 py-3.5 text-sm text-[#6E4A10]">
+                                {{ __('Waiting for the student to respond to an open request.') }}
+                            </div>
+                        @else
+                            <div class="flex flex-col gap-2">
+                                <flux:textarea
+                                    wire:model="request_body"
+                                    x-model="request"
+                                    :label="__('Request information or a document')"
+                                    rows="3"
+                                    maxlength="{{ $this->messageMaxLength() }}"
+                                    :placeholder="__('What do you need from the student?')"
+                                />
+                                <div class="flex items-center justify-between">
+                                    <flux:error name="request_body" />
+                                    <span class="self-end text-xs text-subtle" x-text="request.length + ' / {{ $this->messageMaxLength() }}'"></span>
+                                </div>
+
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <x-confirm-modal
+                                        name="confirm-info-request"
+                                        :heading="__('Send an info request?')"
+                                        :text="__('The application moves to Info Required until the student responds.')"
+                                        :confirmLabel="__('Send info request')"
+                                        variant="primary"
+                                        confirmAction="sendInfoRequest"
+                                    >
+                                        <x-slot:trigger>
+                                            <flux:button variant="primary">{{ __('Request info') }}</flux:button>
+                                        </x-slot:trigger>
+                                    </x-confirm-modal>
+
+                                    <x-confirm-modal
+                                        name="confirm-document-request"
+                                        :heading="__('Send a document request?')"
+                                        :text="__('The application moves to Info Required until the student responds.')"
+                                        :confirmLabel="__('Send document request')"
+                                        variant="primary"
+                                        confirmAction="sendDocumentRequest"
+                                    >
+                                        <x-slot:trigger>
+                                            <flux:button variant="primary">{{ __('Request document') }}</flux:button>
+                                        </x-slot:trigger>
+                                    </x-confirm-modal>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </x-panel>
 
             <x-panel :title="__('Internal notes')">
@@ -290,18 +367,22 @@
             @endif
 
             <x-panel :title="__('Timeline')">
-                @if ($this->timelineEvents->isEmpty())
+                @if ($this->timeline->isEmpty())
                     <div class="px-[22px] py-6 text-center text-sm text-subtle">{{ __('No activity yet.') }}</div>
                 @else
                     <div class="flex flex-col">
-                        @foreach ($this->timelineEvents as $event)
-                            <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
-                                <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
-                                <div class="flex flex-col gap-0.5">
-                                    <span class="text-sm leading-relaxed text-ink-soft">{{ $event->timelineDescription() }}</span>
-                                    <span class="text-[13px] text-subtle">{{ $event->created_at->format('j M Y, g:i A') }}</span>
+                        @foreach ($this->timeline as $item)
+                            @if ($item instanceof \App\Models\ApplicationEvent)
+                                <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
+                                    <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-sm leading-relaxed text-ink-soft">{{ $item->timelineDescription() }}</span>
+                                        <span class="text-[13px] text-subtle">{{ $item->created_at->format('j M Y, g:i A') }}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            @else
+                                <x-message-timeline-item :message="$item" />
+                            @endif
                         @endforeach
                     </div>
                 @endif

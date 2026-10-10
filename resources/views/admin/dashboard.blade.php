@@ -79,14 +79,19 @@
                 <x-panel :title="__('Needs attention')">
                     @forelse ($needsAttention as $application)
                         @php
+                            $hasNewResponse = $application->unreadStudentResponses->isNotEmpty();
                             $isUrgent = $application->priority->value === 'urgent';
                             $daysSinceUpdate = $application->updated_at->diffInDays(now());
+                            $reasonColor = $hasNewResponse ? '#1D4F8A' : ($isUrgent ? '#8A1C14' : '#7A4A00');
+                            $reason = match (true) {
+                                $hasNewResponse => __('New response'),
+                                $isUrgent => __('Urgent'),
+                                default => __('No update for :days days', ['days' => $daysSinceUpdate]),
+                            };
                         @endphp
                         <a href="{{ route('admin.applications.show', $application) }}" class="flex flex-col gap-1 border-t border-border-soft px-[22px] py-3.5 no-underline first:border-t-0">
                             <span class="text-sm font-semibold text-ink">{{ $application->application_no }} &middot; {{ $application->category->name }}</span>
-                            <span class="text-[13px] font-medium" style="color: {{ $isUrgent ? '#8A1C14' : '#7A4A00' }}">
-                                {{ $isUrgent ? __('Urgent') : __('No update for :days days', ['days' => $daysSinceUpdate]) }}
-                            </span>
+                            <span class="text-[13px] font-medium" style="color: {{ $reasonColor }}">{{ $reason }}</span>
                         </a>
                     @empty
                         <div class="px-[22px] py-6 text-center text-sm text-subtle">{{ __('Nothing needs attention right now.') }}</div>

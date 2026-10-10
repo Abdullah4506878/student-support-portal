@@ -45,10 +45,11 @@ class DashboardController extends Controller
             ->get();
 
         $needsAttention = $openQuery()
-            ->with('student.user')
+            ->with(['student.user', 'unreadStudentResponses'])
             ->where(function (Builder $query) {
                 $query->where('priority', ApplicationPriority::Urgent)
-                    ->orWhere('updated_at', '<=', now()->subDays(3));
+                    ->orWhere('updated_at', '<=', now()->subDays(3))
+                    ->orWhereHas('unreadStudentResponses');
             })
             ->orderByPrioritySeverity('desc')
             ->orderBy('updated_at')

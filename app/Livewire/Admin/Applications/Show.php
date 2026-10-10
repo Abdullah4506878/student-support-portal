@@ -5,12 +5,16 @@ namespace App\Livewire\Admin\Applications;
 use App\Enums\ApplicationEventType;
 use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
+use App\Enums\MessageType;
 use App\Models\Application;
 use App\Models\ApplicationEvent;
+use App\Models\ApplicationMessage;
 use App\Models\InternalNote;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -32,6 +36,8 @@ class Show extends Component
         'in_progress',
     ];
 
+    public const MESSAGE_MAX_LENGTH = 1000;
+
     public Application $application;
 
     public string $priority_input = '';
@@ -48,37 +54,53 @@ class Show extends Component
 
     public string $editing_note_body = '';
 
+    public string $message_body = '';
+
+    public string $request_body = '';
+
     public function mount(Application $application): void
     {
         $this->authorize('view', $application);
 
         $this->application = $application->load(['category', 'attachments', 'student.user']);
         $this->priority_input = $application->priority->value;
+
+        // The admin is now looking at this application, so any unread
+        // student responses are no longer "new" for the list/dashboard.
+        $this->application->unreadStudentResponses()->update(['read_at' => now()]);
     }
 
     /**
-     * @return Collection<int, ApplicationEvent>
+     * A single chronological feed of this application's status/priority
+     * history and its messages (free-text, requests, responses) — each
+     * message appears exactly once here, never duplicated as a separate
+     * application_event.
+     *
+     * @return Collection<int, ApplicationEvent|ApplicationMessage>
      */
     #[Computed]
-    public function timelineEvents(): Collection
+    public function timeline(): Collection
     {
-        return $this->application->events()->with('user')->latest('created_at')->get();
+        $events = $this->application->events()->with('user')->get();
+        $messages = $this->application->messages()->with(['sender', 'attachments'])->get();
+
+        return $events->concat($messages)->sortByDesc('created_at')->values();
     }
 
     /**
-     * @return Collection<int, InternalNote>
+     * @return EloquentCollection<int, InternalNote>
      */
     #[Computed]
-    public function internalNotes(): Collection
+    public function internalNotes(): EloquentCollection
     {
         return $this->application->internalNotes()->with('admin')->latest()->get();
     }
 
     /**
-     * @return Collection<int, Application>
+     * @return EloquentCollection<int, Application>
      */
     #[Computed]
-    public function previousApplications(): Collection
+    public function previousApplications(): EloquentCollection
     {
         return Application::query()
             ->where('student_id', $this->application->student_id)
@@ -98,6 +120,17 @@ class Show extends Component
     public function isResolved(): bool
     {
         return $this->application->status === ApplicationStatus::Resolved;
+    }
+
+    #[Computed]
+    public function hasOpenRequest(): bool
+    {
+        return $this->openRequestQuery()->exists();
+    }
+
+    public function messageMaxLength(): int
+    {
+        return self::MESSAGE_MAX_LENGTH;
     }
 
     public function updatePriority(): void
@@ -126,7 +159,7 @@ class Show extends Component
             'visible_to_student' => false,
         ]);
 
-        unset($this->timelineEvents);
+        unset($this->timeline);
 
         $this->modal('confirm-update-priority')->close();
         Flux::toast(variant: 'success', text: __('Priority updated.'));
@@ -145,6 +178,8 @@ class Show extends Component
             return;
         }
 
+        $this->cancelOpenRequestIfAny();
+
         $from = $this->application->status->value;
 
         $this->application->update(['status' => $validated]);
@@ -158,7 +193,7 @@ class Show extends Component
             'visible_to_student' => true,
         ]);
 
-        unset($this->timelineEvents);
+        unset($this->timeline, $this->hasOpenRequest);
 
         $this->modal('confirm-update-status')->close();
         Flux::toast(variant: 'success', text: __('Status updated.'));
@@ -172,6 +207,8 @@ class Show extends Component
         $validated = $this->validate([
             'resolution_note' => ['required', 'string', 'max:1000'],
         ])['resolution_note'];
+
+        $this->cancelOpenRequestIfAny();
 
         $from = $this->application->status->value;
 
@@ -190,7 +227,7 @@ class Show extends Component
             'visible_to_student' => true,
         ]);
 
-        unset($this->timelineEvents);
+        unset($this->timeline, $this->hasOpenRequest);
 
         $this->modal('confirm-resolve')->close();
         Flux::toast(variant: 'success', text: __('Application marked resolved.'));
@@ -204,6 +241,8 @@ class Show extends Component
         $validated = $this->validate([
             'rejection_reason' => ['required', 'string', 'max:1000'],
         ])['rejection_reason'];
+
+        $this->cancelOpenRequestIfAny();
 
         $from = $this->application->status->value;
 
@@ -221,7 +260,7 @@ class Show extends Component
             'visible_to_student' => true,
         ]);
 
-        unset($this->timelineEvents);
+        unset($this->timeline, $this->hasOpenRequest);
 
         $this->modal('confirm-reject')->close();
         Flux::toast(variant: 'success', text: __('Application rejected.'));
@@ -231,6 +270,8 @@ class Show extends Component
     {
         $this->authorize('close', $this->application);
         $this->guardNotFinal();
+
+        $this->cancelOpenRequestIfAny();
 
         $from = $this->application->status->value;
 
@@ -248,10 +289,75 @@ class Show extends Component
             'visible_to_student' => true,
         ]);
 
-        unset($this->timelineEvents);
+        unset($this->timeline, $this->hasOpenRequest);
 
         $this->modal('confirm-close')->close();
         Flux::toast(variant: 'success', text: __('Application closed.'));
+    }
+
+    public function sendMessage(): void
+    {
+        $this->authorize('sendMessage', $this->application);
+        $this->guardNotFinal();
+
+        $validated = $this->validate([
+            'message_body' => ['required', 'string', 'max:'.self::MESSAGE_MAX_LENGTH],
+        ])['message_body'];
+
+        ApplicationMessage::create([
+            'application_id' => $this->application->id,
+            'sender_id' => Auth::id(),
+            'type' => MessageType::Message,
+            'body' => $validated,
+        ]);
+
+        $this->message_body = '';
+        unset($this->timeline);
+
+        // Notifications: Milestone 9.
+        Flux::toast(variant: 'success', text: __('Message sent.'));
+    }
+
+    public function sendInfoRequest(): void
+    {
+        $this->createRequest(MessageType::InfoRequest, 'confirm-info-request', __('Info request sent.'));
+    }
+
+    public function sendDocumentRequest(): void
+    {
+        $this->createRequest(MessageType::DocumentRequest, 'confirm-document-request', __('Document request sent.'));
+    }
+
+    private function createRequest(MessageType $type, string $modalName, string $successMessage): void
+    {
+        $this->authorize('sendRequest', $this->application);
+        $this->guardNotFinal();
+
+        if ($this->hasOpenRequest()) {
+            $this->addError('request_body', __('There is already an open request waiting for the student\'s response.'));
+
+            return;
+        }
+
+        $validated = $this->validate([
+            'request_body' => ['required', 'string', 'max:'.self::MESSAGE_MAX_LENGTH],
+        ])['request_body'];
+
+        ApplicationMessage::create([
+            'application_id' => $this->application->id,
+            'sender_id' => Auth::id(),
+            'type' => $type,
+            'body' => $validated,
+        ]);
+
+        $this->application->update(['status' => ApplicationStatus::InfoRequired]);
+
+        $this->request_body = '';
+        unset($this->timeline, $this->hasOpenRequest);
+
+        // Notifications: Milestone 9.
+        $this->modal($modalName)->close();
+        Flux::toast(variant: 'success', text: $successMessage);
     }
 
     public function addNote(): void
@@ -323,6 +429,27 @@ class Show extends Component
     private function guardNotFinal(): void
     {
         abort_if($this->isFinal(), 403);
+    }
+
+    /**
+     * @return HasMany<ApplicationMessage, Application>
+     */
+    private function openRequestQuery(): HasMany
+    {
+        return $this->application->messages()
+            ->whereIn('type', [MessageType::InfoRequest->value, MessageType::DocumentRequest->value])
+            ->whereNull('responded_at')
+            ->whereNull('cancelled_at');
+    }
+
+    /**
+     * Called whenever the admin changes status, resolves, rejects or
+     * closes the application: any still-open request is auto-cancelled,
+     * since the student can no longer usefully respond to it.
+     */
+    private function cancelOpenRequestIfAny(): void
+    {
+        $this->openRequestQuery()->update(['cancelled_at' => now()]);
     }
 
     public function render(): View
