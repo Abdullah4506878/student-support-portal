@@ -22,7 +22,7 @@ class InternalNote extends Model
 
     public function getActivitylogOptions(): LogOptions
     {
-        return LogOptions::defaults()->logOnly(['body']);
+        return LogOptions::defaults()->logOnly(['body'])->logOnlyDirty();
     }
 
     /**

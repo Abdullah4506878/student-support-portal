@@ -93,4 +93,9 @@ test('correcting a student\'s name is logged in the activity log and shows a suc
         ->first();
 
     expect($activity)->not->toBeNull();
+
+    // The diff lives in attribute_changes, not properties, on this
+    // package version — see UPGRADING.md for the v5 column rename.
+    expect($activity->attribute_changes->get('old')['name'])->toBe('Mohammad Ali');
+    expect($activity->attribute_changes->get('attributes')['name'])->toBe('Muhammad Ali');
 });
