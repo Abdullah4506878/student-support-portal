@@ -59,7 +59,8 @@ test('changing priority records a priority_changed event that is never visible t
         ->test(Show::class, ['application' => $application])
         ->set('priority_input', ApplicationPriority::Urgent->value)
         ->call('updatePriority')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-update-priority');
 
     expect($application->refresh()->priority)->toBe(ApplicationPriority::Urgent);
 
@@ -80,7 +81,8 @@ test('changing status records a status_changed event that is visible to the stud
         ->test(Show::class, ['application' => $application])
         ->set('status_input', 'under_review')
         ->call('updateStatus')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-update-status');
 
     expect($application->refresh()->status)->toBe(ApplicationStatus::UnderReview);
 
@@ -114,7 +116,8 @@ test('resolving an application sets resolved_at and creates a visible event', fu
         ->test(Show::class, ['application' => $application])
         ->set('resolution_note', 'Fee challan corrected.')
         ->call('resolve')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-resolve');
 
     $application->refresh();
     expect($application->status)->toBe(ApplicationStatus::Resolved);
@@ -151,7 +154,8 @@ test('rejecting an application with a reason records a visible event', function 
         ->test(Show::class, ['application' => $application])
         ->set('rejection_reason', 'Outside department scope.')
         ->call('reject')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-reject');
 
     $application->refresh();
     expect($application->status)->toBe(ApplicationStatus::Rejected);
@@ -172,11 +176,84 @@ test('close is allowed even from resolved', function () {
     Livewire::actingAs($admin)
         ->test(Show::class, ['application' => $application])
         ->call('close')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('modal-close', name: 'confirm-close');
 
     $application->refresh();
     expect($application->status)->toBe(ApplicationStatus::Closed);
     expect($application->closed_at)->not->toBeNull();
+});
+
+test('resolved applications only allow closing, not priority, status or rejection changes', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $application = createApplicationInDepartment($department, $student);
+    $application->update(['status' => ApplicationStatus::Resolved, 'resolved_at' => now()]);
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->set('priority_input', ApplicationPriority::Urgent->value)
+        ->call('updatePriority')
+        ->assertForbidden();
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->set('status_input', 'under_review')
+        ->call('updateStatus')
+        ->assertForbidden();
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->set('rejection_reason', 'Too late.')
+        ->call('reject')
+        ->assertForbidden();
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->set('resolution_note', 'Again.')
+        ->call('resolve')
+        ->assertForbidden();
+});
+
+test('the resolved application view shows only the close action', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $application = createApplicationInDepartment($department, $student);
+    $application->update(['status' => ApplicationStatus::Resolved, 'resolved_at' => now()]);
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->assertSee(__('Close application'))
+        ->assertDontSee(__('Update priority'))
+        ->assertDontSee(__('Update status'))
+        ->assertDontSee(__('Resolve application'))
+        ->assertDontSee(__('Reject application'));
+});
+
+test('the closed and rejected application views show no action panel at all', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+
+    $closed = createApplicationInDepartment($department, $student);
+    $closed->update(['status' => ApplicationStatus::Closed, 'closed_at' => now()]);
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $closed])
+        ->assertDontSee(__('Close application'))
+        ->assertDontSee(__('Update priority'))
+        ->assertDontSee(__('Resolve application'));
+
+    $rejected = createApplicationInDepartment($department, $student);
+    $rejected->update(['status' => ApplicationStatus::Rejected, 'rejection_reason' => 'No longer applicable.']);
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $rejected])
+        ->assertDontSee(__('Close application'))
+        ->assertDontSee(__('Update priority'))
+        ->assertDontSee(__('Resolve application'));
 });
 
 test('closed applications can no longer be changed', function () {

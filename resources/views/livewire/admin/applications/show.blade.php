@@ -163,6 +163,25 @@
                         {{ __('This application is :status and cannot be changed further.', ['status' => \Illuminate\Support\Str::headline($application->status->value)]) }}
                     </div>
                 </x-panel>
+            @elseif ($this->isResolved)
+                <x-panel :title="__('Close')">
+                    <div class="flex flex-col gap-3 px-[22px] py-4">
+                        <p class="m-0 text-sm text-subtle">{{ __('This application has been resolved. Closing it is final.') }}</p>
+
+                        <x-confirm-modal
+                            name="confirm-close"
+                            :heading="__('Close this application?')"
+                            :text="__('This is final and cannot be undone.')"
+                            :confirmLabel="__('Close')"
+                            variant="danger"
+                            confirmAction="close"
+                        >
+                            <x-slot:trigger>
+                                <flux:button variant="danger" class="w-full">{{ __('Close application') }}</flux:button>
+                            </x-slot:trigger>
+                        </x-confirm-modal>
+                    </div>
+                </x-panel>
             @else
                 <x-panel :title="__('Priority')">
                     <div class="flex flex-col gap-3 px-[22px] py-4">

@@ -94,10 +94,16 @@ class Show extends Component
         return in_array($this->application->status, [ApplicationStatus::Closed, ApplicationStatus::Rejected], true);
     }
 
+    #[Computed]
+    public function isResolved(): bool
+    {
+        return $this->application->status === ApplicationStatus::Resolved;
+    }
+
     public function updatePriority(): void
     {
         $this->authorize('updatePriority', $this->application);
-        $this->guardNotFinal();
+        $this->guardMutable();
 
         $validated = $this->validate([
             'priority_input' => ['required', Rule::in(array_column(ApplicationPriority::cases(), 'value'))],
@@ -122,13 +128,14 @@ class Show extends Component
 
         unset($this->timelineEvents);
 
+        $this->modal('confirm-update-priority')->close();
         Flux::toast(variant: 'success', text: __('Priority updated.'));
     }
 
     public function updateStatus(): void
     {
         $this->authorize('updateStatus', $this->application);
-        $this->guardNotFinal();
+        $this->guardMutable();
 
         $validated = $this->validate([
             'status_input' => ['required', Rule::in(self::SELECTABLE_STATUSES)],
@@ -153,13 +160,14 @@ class Show extends Component
 
         unset($this->timelineEvents);
 
+        $this->modal('confirm-update-status')->close();
         Flux::toast(variant: 'success', text: __('Status updated.'));
     }
 
     public function resolve(): void
     {
         $this->authorize('resolve', $this->application);
-        $this->guardNotFinal();
+        $this->guardMutable();
 
         $validated = $this->validate([
             'resolution_note' => ['required', 'string', 'max:1000'],
@@ -184,13 +192,14 @@ class Show extends Component
 
         unset($this->timelineEvents);
 
+        $this->modal('confirm-resolve')->close();
         Flux::toast(variant: 'success', text: __('Application marked resolved.'));
     }
 
     public function reject(): void
     {
         $this->authorize('reject', $this->application);
-        $this->guardNotFinal();
+        $this->guardMutable();
 
         $validated = $this->validate([
             'rejection_reason' => ['required', 'string', 'max:1000'],
@@ -214,6 +223,7 @@ class Show extends Component
 
         unset($this->timelineEvents);
 
+        $this->modal('confirm-reject')->close();
         Flux::toast(variant: 'success', text: __('Application rejected.'));
     }
 
@@ -240,6 +250,7 @@ class Show extends Component
 
         unset($this->timelineEvents);
 
+        $this->modal('confirm-close')->close();
         Flux::toast(variant: 'success', text: __('Application closed.'));
     }
 
@@ -294,6 +305,19 @@ class Show extends Component
         unset($this->internalNotes);
 
         Flux::toast(variant: 'success', text: __('Note updated.'));
+    }
+
+    /**
+     * Resolved, closed and rejected are all off-limits to priority/status
+     * changes, resolving again, or rejecting — only close() may still run,
+     * and only while not yet closed/rejected (see guardNotFinal()).
+     */
+    private function guardMutable(): void
+    {
+        abort_if(
+            in_array($this->application->status, [ApplicationStatus::Resolved, ApplicationStatus::Closed, ApplicationStatus::Rejected], true),
+            403,
+        );
     }
 
     private function guardNotFinal(): void
