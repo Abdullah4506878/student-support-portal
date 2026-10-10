@@ -30,9 +30,7 @@ class AnnouncementPolicy
         // Students only ever see published, active, in-window announcements
         // for their own department — drafts stay admin-only.
         return $user->department_id === $announcement->department_id
-            && $announcement->is_active
-            && ($announcement->publish_at === null || $announcement->publish_at->isPast())
-            && ($announcement->expires_at === null || $announcement->expires_at->isFuture());
+            && $announcement->isCurrentlyVisible();
     }
 
     public function create(User $user): bool

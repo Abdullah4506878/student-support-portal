@@ -2,14 +2,17 @@
 
 use App\Enums\RoleName;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\AnnouncementFileController;
 use App\Http\Controllers\ApplicationAttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Livewire\Admin\Announcements\Index as AdminAnnouncementsIndex;
 use App\Livewire\Admin\Applications\Index as AdminApplicationsIndex;
 use App\Livewire\Admin\Applications\Show as AdminApplicationsShow;
 use App\Livewire\Admin\Students\Index as AdminStudentsIndex;
 use App\Livewire\Admin\Students\Show as AdminStudentsShow;
 use App\Livewire\Notifications\Index as NotificationsIndex;
+use App\Livewire\Student\Announcements\Index as StudentAnnouncementsIndex;
 use App\Livewire\Student\Applications\Create as ApplicationsCreate;
 use App\Livewire\Student\Applications\Index as ApplicationsIndex;
 use App\Livewire\Student\Applications\Show as ApplicationsShow;
@@ -25,6 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('applications/attachments/{attachment}', [ApplicationAttachmentController::class, 'show'])
         ->name('applications.attachments.show');
+
+    Route::get('announcements/{announcement}/image', [AnnouncementFileController::class, 'image'])
+        ->name('announcements.image.show');
+    Route::get('announcements/{announcement}/attachment', [AnnouncementFileController::class, 'attachment'])
+        ->name('announcements.attachment.show');
 });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::Student->value])
@@ -38,6 +46,7 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::Student->value])
         Route::livewire('applications/{application}', ApplicationsShow::class)->name('applications.show');
 
         Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
+        Route::livewire('announcements', StudentAnnouncementsIndex::class)->name('announcements.index');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])
@@ -52,6 +61,7 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])
         Route::livewire('students/{student}', AdminStudentsShow::class)->name('students.show');
 
         Route::livewire('notifications', NotificationsIndex::class)->name('notifications.index');
+        Route::livewire('announcements', AdminAnnouncementsIndex::class)->name('announcements.index');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::SuperAdmin->value])

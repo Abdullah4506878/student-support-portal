@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Enums\ApplicationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Announcement;
 use App\Models\Application;
 use App\Models\ApplicationEvent;
 use Illuminate\Contracts\View\View;
@@ -45,11 +46,19 @@ class DashboardController extends Controller
             'resolved' => Application::query()->where('student_id', $student->id)->where('status', ApplicationStatus::Resolved)->count(),
         ];
 
+        $announcements = Announcement::query()
+            ->where('department_id', Auth::user()->department_id)
+            ->visibleToStudents()
+            ->orderByRaw('COALESCE(publish_at, created_at) desc')
+            ->take(3)
+            ->get();
+
         return view('student.dashboard', [
             'applications' => $applications,
             'actionNeeded' => $actionNeeded,
             'latestEvents' => $latestEvents,
             'stats' => $stats,
+            'announcements' => $announcements,
         ]);
     }
 }

@@ -112,9 +112,31 @@
 
             <aside class="flex min-w-0 flex-1 basis-80 flex-col gap-6">
                 <x-panel :title="__('Announcements')">
-                    <div class="px-[22px] py-6 text-center text-sm text-subtle">
-                        {{ __('No announcements yet.') }}
-                    </div>
+                    <x-slot:actions>
+                        <flux:link :href="Route::has('student.announcements.index') ? route('student.announcements.index') : '#'" class="text-sm font-semibold" wire:navigate>
+                            {{ __('See all') }}
+                        </flux:link>
+                    </x-slot:actions>
+
+                    @forelse ($announcements as $announcement)
+                        <a
+                            href="{{ Route::has('student.announcements.index') ? route('student.announcements.index') : '#' }}"
+                            wire:navigate
+                            class="flex flex-col gap-1 border-t border-border-soft px-[22px] py-4 no-underline first:border-t-0"
+                        >
+                            <span class="flex items-center gap-2 text-[15px] font-semibold text-ink">
+                                {{ $announcement->title }}
+                                @if ($announcement->isRecentlyPublished())
+                                    <flux:badge color="amber" size="sm">{{ __('New') }}</flux:badge>
+                                @endif
+                            </span>
+                            <span class="text-[13px] text-subtle">{{ ($announcement->publish_at ?? $announcement->created_at)->format('j M Y') }}</span>
+                        </a>
+                    @empty
+                        <div class="px-[22px] py-6 text-center text-sm text-subtle">
+                            {{ __('No announcements yet.') }}
+                        </div>
+                    @endforelse
                 </x-panel>
 
                 <x-panel :title="__('Latest updates')">

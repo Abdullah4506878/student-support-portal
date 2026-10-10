@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Models\Concerns\ScopedToAdminDepartment;
 use Database\Factories\AnnouncementFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $department_id
@@ -18,7 +21,7 @@ use Illuminate\Support\Carbon;
 class Announcement extends Model
 {
     /** @use HasFactory<AnnouncementFactory> */
-    use HasFactory, ScopedToAdminDepartment;
+    use HasFactory, LogsActivity, ScopedToAdminDepartment;
 
     protected $fillable = [
         'department_id',
@@ -27,6 +30,7 @@ class Announcement extends Model
         'body',
         'image_path',
         'attachment_path',
+        'attachment_original_name',
         'publish_at',
         'expires_at',
         'is_active',
@@ -39,6 +43,13 @@ class Announcement extends Model
             'expires_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'body', 'image_path', 'attachment_path', 'publish_at', 'expires_at', 'is_active'])
+            ->logOnlyDirty();
     }
 
     /**
@@ -55,5 +66,63 @@ class Announcement extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Active, published (or publish_at in the past/null) and not yet
+     * expired — the single rule for what a student may ever see, shared
+     * by the policy and by any query that lists announcements for them.
+     */
+    public function isCurrentlyVisible(): bool
+    {
+        return $this->is_active
+            && ($this->publish_at === null || $this->publish_at->isPast())
+            && ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
+    /**
+     * @param  Builder<Announcement>  $query
+     * @return Builder<Announcement>
+     */
+    public function scopeVisibleToStudents(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function (Builder $query) {
+                $query->whereNull('publish_at')->orWhere('publish_at', '<=', now());
+            })
+            ->where(function (Builder $query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            });
+    }
+
+    /**
+     * Scheduled (publish_at in the future), Expired, Inactive, or Live —
+     * for the admin list's status column.
+     */
+    public function statusLabel(): string
+    {
+        if (! $this->is_active) {
+            return 'Inactive';
+        }
+
+        if ($this->publish_at !== null && $this->publish_at->isFuture()) {
+            return 'Scheduled';
+        }
+
+        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+            return 'Expired';
+        }
+
+        return 'Live';
+    }
+
+    /**
+     * Published within the last 3 days — drives the "New" badge.
+     */
+    public function isRecentlyPublished(): bool
+    {
+        $publishedAt = $this->publish_at ?? $this->created_at;
+
+        return $publishedAt !== null && $publishedAt->greaterThan(now()->subDays(3));
     }
 }
