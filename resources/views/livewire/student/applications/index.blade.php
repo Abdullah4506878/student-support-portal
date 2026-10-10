@@ -13,12 +13,17 @@
         </div>
 
         <div class="flex min-w-0 flex-1 basis-48 flex-col gap-1">
-            <flux:select wire:model.live="status" :label="__('Status')" :placeholder="__('All statuses')">
+            <flux:select wire:model.live="status" :label="__('Status')">
+                <flux:select.option value="">{{ __('All statuses') }}</flux:select.option>
                 @foreach ($this->statuses as $value => $label)
                     <flux:select.option :value="$value">{{ $label }}</flux:select.option>
                 @endforeach
             </flux:select>
         </div>
+
+        @if ($this->hasActiveFilters)
+            <flux:button variant="ghost" wire:click="clearFilters">{{ __('Clear filters') }}</flux:button>
+        @endif
     </div>
 
     @if ($this->applications->isEmpty())

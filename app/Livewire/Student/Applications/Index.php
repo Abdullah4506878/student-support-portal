@@ -32,6 +32,18 @@ class Index extends Component
         }
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'status']);
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function hasActiveFilters(): bool
+    {
+        return $this->search !== '' || $this->status !== '';
+    }
+
     /**
      * @return LengthAwarePaginator<int, Application>
      */

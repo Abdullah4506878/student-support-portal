@@ -81,6 +81,82 @@ test('search matches by application number', function () {
         ->assertSee('Searchable subject');
 });
 
+test('the status filter can be reset back to showing everything', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+
+    Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'subject' => 'Submitted one',
+        'status' => ApplicationStatus::Submitted,
+    ]);
+    Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'subject' => 'Resolved one',
+        'status' => ApplicationStatus::Resolved,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->set('status', 'resolved')
+        ->assertDontSee('Submitted one')
+        ->set('status', '')
+        ->assertSee('Submitted one')
+        ->assertSee('Resolved one');
+});
+
+test('clearFilters resets search, every dropdown and the date range', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+
+    $component = Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->set('search', 'something')
+        ->set('status', 'resolved')
+        ->set('priority', 'urgent')
+        ->set('category_id', '1')
+        ->set('semester', '3')
+        ->set('date_from', '2026-01-01')
+        ->set('date_to', '2026-01-31');
+
+    expect($component->get('hasActiveFilters'))->toBeTrue();
+
+    $component->call('clearFilters');
+
+    expect($component->get('search'))->toBe('');
+    expect($component->get('status'))->toBe('');
+    expect($component->get('priority'))->toBe('');
+    expect($component->get('category_id'))->toBe('');
+    expect($component->get('semester'))->toBe('');
+    expect($component->get('date_from'))->toBe('');
+    expect($component->get('date_to'))->toBe('');
+});
+
+test('visiting the index with a search query string (as the top-bar search does) filters the list', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $student->update(['name' => 'Zarmeen Abbas']);
+    $category = ApplicationCategory::factory()->create(['department_id' => $department->id]);
+    Application::factory()->create([
+        'student_id' => $student->student->id,
+        'department_id' => $department->id,
+        'category_id' => $category->id,
+        'subject' => 'Findable via top bar search',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.applications.index', ['search' => 'Zarmeen']))
+        ->assertOk()
+        ->assertSee('Findable via top bar search');
+});
+
 test('status filter narrows the results', function () {
     $department = Department::factory()->create();
     $admin = createAdminOfficer($department);

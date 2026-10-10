@@ -71,6 +71,24 @@ class Index extends Component
         }
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'status', 'priority', 'category_id', 'semester', 'date_from', 'date_to']);
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function hasActiveFilters(): bool
+    {
+        return $this->search !== ''
+            || $this->status !== ''
+            || $this->priority !== ''
+            || $this->category_id !== ''
+            || $this->semester !== ''
+            || $this->date_from !== ''
+            || $this->date_to !== '';
+    }
+
     /**
      * @return LengthAwarePaginator<int, Application>
      */

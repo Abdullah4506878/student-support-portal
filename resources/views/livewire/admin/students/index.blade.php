@@ -7,7 +7,8 @@
         </div>
 
         <div class="flex min-w-0 flex-1 basis-48 flex-col gap-1">
-            <flux:select wire:model.live="program" :label="__('Program')" :placeholder="__('All programs')">
+            <flux:select wire:model.live="program" :label="__('Program')">
+                <flux:select.option value="">{{ __('All programs') }}</flux:select.option>
                 @foreach ($this->programs as $value => $label)
                     <flux:select.option :value="$value">{{ $label }}</flux:select.option>
                 @endforeach
@@ -15,7 +16,8 @@
         </div>
 
         <div class="flex min-w-0 flex-1 basis-32 flex-col gap-1">
-            <flux:select wire:model.live="semester" :label="__('Semester')" :placeholder="__('All')">
+            <flux:select wire:model.live="semester" :label="__('Semester')">
+                <flux:select.option value="">{{ __('All') }}</flux:select.option>
                 @foreach (range(1, 8) as $semester)
                     <flux:select.option :value="(string) $semester">{{ $semester }}</flux:select.option>
                 @endforeach
@@ -23,12 +25,17 @@
         </div>
 
         <div class="flex min-w-0 flex-1 basis-40 flex-col gap-1">
-            <flux:select wire:model.live="status" :label="__('Status')" :placeholder="__('All statuses')">
+            <flux:select wire:model.live="status" :label="__('Status')">
+                <flux:select.option value="">{{ __('All statuses') }}</flux:select.option>
                 @foreach ($this->statuses as $value => $label)
                     <flux:select.option :value="$value">{{ $label }}</flux:select.option>
                 @endforeach
             </flux:select>
         </div>
+
+        @if ($this->hasActiveFilters)
+            <flux:button variant="ghost" wire:click="clearFilters">{{ __('Clear filters') }}</flux:button>
+        @endif
     </div>
 
     @if ($this->students->isEmpty())

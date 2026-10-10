@@ -2,14 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ApplicationEventType;
 use App\Enums\ApplicationStatus;
 use App\Enums\RoleName;
 use App\Enums\UserStatus;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationEvent;
 use App\Models\Department;
 use App\Models\Student;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 /**
@@ -23,10 +26,22 @@ use Illuminate\Database\Seeder;
  */
 class DemoSeeder extends Seeder
 {
+    /**
+     * Statuses still "in flight" — their application was submitted this
+     * same semester, so semester_at_submission matches current_semester.
+     * Concluded ones (resolved/closed/rejected) are treated as slightly
+     * older, having been submitted a semester earlier.
+     */
+    private const ACTIVE_STATUSES = ['submitted', 'under_review', 'info_required', 'in_progress'];
+
     public function run(): void
     {
         $department = Department::query()->where('code', 'SE')->firstOrFail();
         $categories = ApplicationCategory::query()->where('department_id', $department->id)->get()->keyBy('name');
+        $adminUserId = User::query()->where('department_id', $department->id)
+            ->role(RoleName::AdminOfficer->value)->value('id');
+
+        $globalIndex = 0;
 
         foreach (self::demoStudents() as $def) {
             $registrationNo = self::registrationNo($def);
@@ -50,15 +65,27 @@ class DemoSeeder extends Seeder
             ]);
 
             foreach ($def['applications'] as $appDef) {
-                Application::createWithApplicationNumber(array_merge(
+                $attributes = self::applicationAttributes($appDef, $globalIndex, $student->current_semester);
+
+                $application = Application::createWithApplicationNumber(array_merge(
                     [
                         'student_id' => $student->id,
                         'department_id' => $department->id,
                         'category_id' => $categories[$appDef['category']]->id,
-                        'semester_at_submission' => $student->current_semester,
                     ],
-                    self::applicationAttributes($appDef),
+                    $attributes,
                 ));
+
+                // created_at/updated_at aren't mass-assignable, so backdating
+                // them (to match their application_events) needs forceFill.
+                $application->forceFill([
+                    'created_at' => $attributes['created_at'],
+                    'updated_at' => $attributes['updated_at'],
+                ])->save();
+
+                self::createEvents($application, $appDef, $globalIndex, $user->id, $adminUserId);
+
+                $globalIndex++;
             }
         }
     }
@@ -336,25 +363,99 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Maps a demo application definition to Application attributes, adding
-     * resolved_at/closed_at to match whichever status was given.
+     * Deterministic, always-in-the-past submission/transition timestamps
+     * for the application at this position across the whole demo set
+     * (0-21), so re-running either seeder produces the same dates.
+     *
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    public static function timestampsFor(int $globalIndex): array
+    {
+        $submittedAt = now()->subDays(30 - $globalIndex)->setTime(9, 0);
+        $transitionAt = $submittedAt->copy()->addDays(3 + ($globalIndex % 5));
+
+        return [$submittedAt, $transitionAt];
+    }
+
+    /**
+     * Maps a demo application definition to Application attributes:
+     * resolved_at/closed_at and created_at/updated_at follow the same
+     * timestamps used for its application_events, and semester_at_submission
+     * matches the student's current semester only while still active —
+     * concluded applications are treated as having been submitted a
+     * semester earlier.
      *
      * @param  array<string, string>  $appDef
      * @return array<string, mixed>
      */
-    public static function applicationAttributes(array $appDef): array
+    public static function applicationAttributes(array $appDef, int $globalIndex, int $currentSemester): array
     {
         $status = ApplicationStatus::from($appDef['status']);
+        [$submittedAt, $transitionAt] = self::timestampsFor($globalIndex);
+        $concludedAt = $status->value === 'submitted' ? $submittedAt : $transitionAt;
+
+        $isActive = in_array($appDef['status'], self::ACTIVE_STATUSES, true);
 
         return [
             'subject' => $appDef['subject'],
             'body' => $appDef['body'],
             'priority' => $appDef['priority'],
             'status' => $status,
+            'semester_at_submission' => $isActive ? $currentSemester : max(1, $currentSemester - 1),
             'resolution_note' => $appDef['resolution_note'] ?? null,
             'rejection_reason' => $appDef['rejection_reason'] ?? null,
-            'resolved_at' => $status === ApplicationStatus::Resolved ? now() : null,
-            'closed_at' => $status === ApplicationStatus::Closed ? now() : null,
+            'resolved_at' => $status === ApplicationStatus::Resolved ? $concludedAt : null,
+            'closed_at' => $status === ApplicationStatus::Closed ? $concludedAt : null,
+            'created_at' => $submittedAt,
+            'updated_at' => $concludedAt,
         ];
+    }
+
+    /**
+     * Creates the application_events matching the application's own
+     * status: always a "submitted" event, plus — unless it's still
+     * "submitted" — one more event for whichever status it concluded at.
+     *
+     * @param  array<string, string>  $appDef
+     */
+    public static function createEvents(
+        Application $application,
+        array $appDef,
+        int $globalIndex,
+        int $studentUserId,
+        ?int $adminUserId,
+    ): void {
+        [$submittedAt, $transitionAt] = self::timestampsFor($globalIndex);
+        $status = ApplicationStatus::from($appDef['status']);
+
+        // created_at isn't mass-assignable, hence forceFill rather than create().
+        (new ApplicationEvent)->forceFill([
+            'application_id' => $application->id,
+            'user_id' => $studentUserId,
+            'event_type' => ApplicationEventType::Submitted,
+            'visible_to_student' => true,
+            'created_at' => $submittedAt,
+        ])->save();
+
+        if ($status === ApplicationStatus::Submitted) {
+            return;
+        }
+
+        $eventType = match ($status) {
+            ApplicationStatus::Resolved => ApplicationEventType::Resolved,
+            ApplicationStatus::Closed => ApplicationEventType::Closed,
+            ApplicationStatus::Rejected => ApplicationEventType::Rejected,
+            default => ApplicationEventType::StatusChanged,
+        };
+
+        (new ApplicationEvent)->forceFill([
+            'application_id' => $application->id,
+            'user_id' => $adminUserId,
+            'event_type' => $eventType,
+            'from_value' => ApplicationStatus::Submitted->value,
+            'to_value' => $status->value,
+            'visible_to_student' => true,
+            'created_at' => $transitionAt,
+        ])->save();
     }
 }

@@ -57,5 +57,29 @@ test('status filter narrows the results', function () {
         ->test(Index::class)
         ->set('status', 'suspended')
         ->assertSee('Suspended Student')
-        ->assertDontSee('Active Student');
+        ->assertDontSee('Active Student')
+        ->set('status', '')
+        ->assertSee('Active Student')
+        ->assertSee('Suspended Student');
+});
+
+test('clearFilters resets search and every dropdown', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+
+    $component = Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->set('search', 'something')
+        ->set('program', 'BS Software Engineering')
+        ->set('semester', '3')
+        ->set('status', 'suspended');
+
+    expect($component->get('hasActiveFilters'))->toBeTrue();
+
+    $component->call('clearFilters');
+
+    expect($component->get('search'))->toBe('');
+    expect($component->get('program'))->toBe('');
+    expect($component->get('semester'))->toBe('');
+    expect($component->get('status'))->toBe('');
 });

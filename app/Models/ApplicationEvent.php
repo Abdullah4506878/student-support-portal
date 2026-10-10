@@ -71,4 +71,39 @@ class ApplicationEvent extends Model
             ApplicationEventType::Rejected => __(':number was rejected.', ['number' => $applicationNo]),
         };
     }
+
+    /**
+     * A human-readable description for a single application's own timeline,
+     * where naming the application again on every row is just noise.
+     */
+    public function timelineDescription(): string
+    {
+        return match ($this->event_type) {
+            ApplicationEventType::Submitted => __('Application submitted.'),
+            ApplicationEventType::StatusChanged => __('Status changed from :from to :to.', [
+                'from' => self::humanizeValue((string) $this->from_value),
+                'to' => self::humanizeValue((string) $this->to_value),
+            ]),
+            ApplicationEventType::PriorityChanged => __('Priority changed from :from to :to.', [
+                'from' => self::humanizeValue((string) $this->from_value),
+                'to' => self::humanizeValue((string) $this->to_value),
+            ]),
+            ApplicationEventType::MessageSent => __('The Admin Office sent a message.'),
+            ApplicationEventType::InfoRequested => __('The Admin Office requested more information.'),
+            ApplicationEventType::DocumentRequested => __('The Admin Office requested a document.'),
+            ApplicationEventType::StudentResponded => __('The student responded.'),
+            ApplicationEventType::AttachmentUploaded => __('A file was uploaded.'),
+            ApplicationEventType::Resolved => __('Application resolved.'),
+            ApplicationEventType::Closed => __('Application closed.'),
+            ApplicationEventType::Rejected => __('Application rejected.'),
+        };
+    }
+
+    /**
+     * "under_review" -> "Under review", "urgent" -> "Urgent".
+     */
+    private static function humanizeValue(string $value): string
+    {
+        return Str::of($value)->replace('_', ' ')->lower()->ucfirst()->toString();
+    }
 }

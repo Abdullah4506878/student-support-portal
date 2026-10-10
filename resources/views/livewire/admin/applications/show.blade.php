@@ -173,11 +173,11 @@
                             :heading="__('Close this application?')"
                             :text="__('This is final and cannot be undone.')"
                             :confirmLabel="__('Close')"
-                            variant="danger"
+                            variant="primary"
                             confirmAction="close"
                         >
                             <x-slot:trigger>
-                                <flux:button variant="danger" class="w-full">{{ __('Close application') }}</flux:button>
+                                <flux:button variant="primary" class="w-full">{{ __('Close application') }}</flux:button>
                             </x-slot:trigger>
                         </x-confirm-modal>
                     </div>
@@ -278,11 +278,11 @@
                             :heading="__('Close this application?')"
                             :text="__('This is final and cannot be undone.')"
                             :confirmLabel="__('Close')"
-                            variant="danger"
+                            variant="primary"
                             confirmAction="close"
                         >
                             <x-slot:trigger>
-                                <flux:button variant="danger" class="w-full">{{ __('Close application') }}</flux:button>
+                                <flux:button variant="primary" class="w-full">{{ __('Close application') }}</flux:button>
                             </x-slot:trigger>
                         </x-confirm-modal>
                     </div>
@@ -298,7 +298,7 @@
                             <div class="flex gap-3 border-t border-border-soft px-[22px] py-3.5 first:border-t-0">
                                 <span class="mt-1.5 size-2 shrink-0 rounded-full bg-plum"></span>
                                 <div class="flex flex-col gap-0.5">
-                                    <span class="text-sm leading-relaxed text-ink-soft">{{ $event->description() }}</span>
+                                    <span class="text-sm leading-relaxed text-ink-soft">{{ $event->timelineDescription() }}</span>
                                     <span class="text-[13px] text-subtle">{{ $event->created_at->format('j M Y, g:i A') }}</span>
                                 </div>
                             </div>

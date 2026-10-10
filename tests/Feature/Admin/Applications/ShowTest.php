@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Livewire\Admin\Applications\Show;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationEvent;
 use App\Models\Department;
 use App\Models\InternalNote;
 use Livewire\Livewire;
@@ -340,4 +341,39 @@ test('internal notes are visible to the admin officer who manages the applicatio
     Livewire::actingAs($admin)
         ->test(Show::class, ['application' => $application])
         ->assertSee('Called the student to confirm the fee amount.');
+});
+
+test('the timeline shows human-readable text without repeating the application number', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+    $application = createApplicationInDepartment($department, $student);
+
+    ApplicationEvent::create([
+        'application_id' => $application->id,
+        'event_type' => ApplicationEventType::Submitted,
+        'visible_to_student' => true,
+    ]);
+    ApplicationEvent::create([
+        'application_id' => $application->id,
+        'event_type' => ApplicationEventType::StatusChanged,
+        'from_value' => 'under_review',
+        'to_value' => 'resolved',
+        'visible_to_student' => true,
+    ]);
+    ApplicationEvent::create([
+        'application_id' => $application->id,
+        'event_type' => ApplicationEventType::PriorityChanged,
+        'from_value' => 'urgent',
+        'to_value' => 'normal',
+        'visible_to_student' => false,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Show::class, ['application' => $application])
+        ->assertSee('Application submitted.')
+        ->assertSee('Status changed from Under review to Resolved.')
+        ->assertSee('Priority changed from Urgent to Normal.')
+        ->assertDontSee($application->application_no.' was submitted')
+        ->assertDontSee($application->application_no.' moved to');
 });

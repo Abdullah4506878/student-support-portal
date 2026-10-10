@@ -43,6 +43,21 @@ class Index extends Component
         }
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'program', 'semester', 'status']);
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function hasActiveFilters(): bool
+    {
+        return $this->search !== ''
+            || $this->program !== ''
+            || $this->semester !== ''
+            || $this->status !== '';
+    }
+
     /**
      * @return LengthAwarePaginator<int, Student>
      */

@@ -62,7 +62,7 @@ test('only events visible to the student are shown on the timeline', function ()
 
     $response = Livewire::actingAs($student)->test(Show::class, ['application' => $application]);
 
-    $response->assertSee(__(':number was submitted.', ['number' => $application->application_no]));
+    $response->assertSee(__('Application submitted.'));
     $response->assertDontSee('priority');
 });
 

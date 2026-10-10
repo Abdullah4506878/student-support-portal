@@ -2,9 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\RoleName;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationEvent;
 use App\Models\Student;
+use App\Models\User;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -51,8 +54,13 @@ class RefreshDemoData extends Command
             ));
         }
 
-        $categories = ApplicationCategory::query()->where('department_id', $demoStudents->first()->user->department_id)
-            ->get()->keyBy('name');
+        $departmentId = $demoStudents->first()->user->department_id;
+        $categories = ApplicationCategory::query()->where('department_id', $departmentId)->get()->keyBy('name');
+        $adminUserId = User::query()->where('department_id', $departmentId)
+            ->role(RoleName::AdminOfficer->value)->value('id');
+
+        $globalIndex = 0;
+        $applicationCount = 0;
 
         foreach ($demoStudents->values() as $index => $student) {
             $def = $definitions[$index];
@@ -84,15 +92,28 @@ class RefreshDemoData extends Command
 
             foreach ($applications->values() as $appIndex => $application) {
                 $appDef = $def['applications'][$appIndex];
+                $attributes = DemoSeeder::applicationAttributes($appDef, $globalIndex, $student->current_semester);
 
                 /** @var Application $application */
                 $application->update(array_merge(
                     ['category_id' => $categories[$appDef['category']]->id],
-                    DemoSeeder::applicationAttributes($appDef),
+                    $attributes,
                 ));
+
+                // created_at/updated_at aren't mass-assignable.
+                $application->forceFill([
+                    'created_at' => $attributes['created_at'],
+                    'updated_at' => $attributes['updated_at'],
+                ])->save();
+
+                ApplicationEvent::query()->where('application_id', $application->id)->delete();
+                DemoSeeder::createEvents($application, $appDef, $globalIndex, $student->user_id, $adminUserId);
+
+                $globalIndex++;
+                $applicationCount++;
             }
         }
 
-        $this->info(sprintf('Refreshed %d demo students and %d applications.', $demoStudents->count(), $demoStudents->sum(fn ($s) => $s->applications()->count())));
+        $this->info(sprintf('Refreshed %d demo students and %d applications.', $demoStudents->count(), $applicationCount));
     }
 }

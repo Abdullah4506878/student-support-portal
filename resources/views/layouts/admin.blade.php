@@ -145,15 +145,21 @@
         <flux:header class="border-b border-border bg-white">
             <flux:sidebar.toggle class="text-ink lg:hidden" icon="bars-2" />
 
-            <label class="ms-2 flex h-11 flex-1 basis-80 items-center gap-2.5 rounded-xl border border-border-input bg-[#FAF8F9] px-3.5 text-subtle sm:max-w-[520px]">
+            <form
+                action="{{ Route::has($routePrefix.'applications.index') ? route($routePrefix.'applications.index') : '#' }}"
+                method="GET"
+                class="ms-2 flex h-11 flex-1 basis-80 items-center gap-2.5 rounded-xl border border-border-input bg-[#FAF8F9] px-3.5 text-subtle sm:max-w-[520px]"
+            >
                 <flux:icon icon="magnifying-glass" variant="outline" class="size-4.5" />
-                <span class="sr-only">{{ __('Search') }}</span>
+                <label class="sr-only" for="admin-top-search">{{ __('Search') }}</label>
                 <input
+                    id="admin-top-search"
                     type="search"
+                    name="search"
                     placeholder="{{ __('Search by application ID, student name or reg. no.') }}"
                     class="min-w-0 flex-1 border-0 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-placeholder"
                 />
-            </label>
+            </form>
 
             <flux:spacer />
 

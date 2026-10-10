@@ -1,9 +1,11 @@
 <?php
 
+use App\Enums\ApplicationEventType;
 use App\Enums\ApplicationStatus;
 use App\Enums\RoleName;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
+use App\Models\ApplicationEvent;
 use App\Models\Department;
 use App\Models\Student;
 use App\Models\User;
@@ -94,6 +96,22 @@ test('demo:refresh rewrites demo students and applications without touching the 
     expect($firstApplication->subject)->toBe('Fee challan not updated after payment');
     expect($firstApplication->status)->toBe(ApplicationStatus::Resolved);
     expect($firstApplication->resolution_note)->not->toBeNull();
+
+    // Resolved (concluded) — treated as submitted a semester earlier than current.
+    expect($firstApplication->semester_at_submission)->toBe($firstDemoStudent->current_semester - 1);
+    expect($firstApplication->created_at)->not->toBeNull();
+    expect($firstApplication->created_at->lessThan(now()))->toBeTrue();
+
+    $events = $firstApplication->events()->orderBy('created_at')->get();
+    expect($events)->toHaveCount(2);
+    expect($events[0]->event_type)->toBe(ApplicationEventType::Submitted);
+    expect($events[1]->event_type)->toBe(ApplicationEventType::Resolved);
+    expect($events[1]->from_value)->toBe('submitted');
+    expect($events[1]->to_value)->toBe('resolved');
+
+    // The protected application never had events, and refreshing other
+    // applications must never create any for it.
+    expect(ApplicationEvent::query()->where('application_id', $protectedApplication->id)->count())->toBe(0);
 });
 
 test('DemoSeeder creates 10 realistic students with 22 applications in total', function () {
@@ -108,4 +126,9 @@ test('DemoSeeder creates 10 realistic students with 22 applications in total', f
     $hamza = Student::query()->where('registration_no', 'SU92-BSSEM-F22-101')->with('user')->first();
     expect($hamza->user->name)->toBe('Hamza Ali');
     expect($hamza->user->email)->toBe('su92-bssem-f22-101@superior.edu.pk');
+
+    // Every application gets a "submitted" event, plus one more for each
+    // that has already moved past "submitted" (18 of the 22 have).
+    expect(ApplicationEvent::count())->toBe(22 + 18);
+    expect(ApplicationEvent::where('event_type', ApplicationEventType::Submitted->value)->count())->toBe(22);
 });
