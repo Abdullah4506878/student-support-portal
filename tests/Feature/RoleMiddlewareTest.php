@@ -83,3 +83,24 @@ test('each role can reach its own dashboard', function () {
     $superAdmin->assignRole(RoleName::SuperAdmin->value);
     $this->actingAs($superAdmin)->get(route('super-admin.dashboard'))->assertOk();
 });
+
+test('an admin officer can reach their own applications and students index', function () {
+    $admin = createAdminOfficer();
+
+    $this->actingAs($admin)->get(route('admin.applications.index'))->assertOk();
+    $this->actingAs($admin)->get(route('admin.students.index'))->assertOk();
+});
+
+test('a student cannot access the admin applications or students index', function () {
+    $student = createStudentUser();
+
+    $this->actingAs($student)->get(route('admin.applications.index'))->assertForbidden();
+    $this->actingAs($student)->get(route('admin.students.index'))->assertForbidden();
+});
+
+test('a super admin cannot access the admin officer applications or students index', function () {
+    $superAdmin = createSuperAdmin();
+
+    $this->actingAs($superAdmin)->get(route('admin.applications.index'))->assertForbidden();
+    $this->actingAs($superAdmin)->get(route('admin.students.index'))->assertForbidden();
+});

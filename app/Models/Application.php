@@ -6,16 +6,23 @@ use App\Enums\ApplicationPriority;
 use App\Enums\ApplicationStatus;
 use App\Models\Concerns\ScopedToAdminDepartment;
 use Database\Factories\ApplicationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
+/**
+ * @property ApplicationStatus $status
+ * @property ApplicationPriority $priority
+ */
 class Application extends Model
 {
     /** @use HasFactory<ApplicationFactory> */
-    use HasFactory, ScopedToAdminDepartment;
+    use HasFactory, LogsActivity, ScopedToAdminDepartment;
 
     protected $fillable = [
         'application_no',
@@ -41,6 +48,11 @@ class Application extends Model
             'resolved_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logOnly(['status', 'priority']);
     }
 
     /**
@@ -116,5 +128,22 @@ class Application extends Model
     public function internalNotes(): HasMany
     {
         return $this->hasMany(InternalNote::class);
+    }
+
+    /**
+     * Orders by priority severity (low < normal < high < urgent) using a
+     * portable CASE expression, since priority is stored as a string and
+     * MySQL's FIELD() has no SQLite equivalent (used in tests).
+     *
+     * @param  Builder<Application>  $query
+     * @return Builder<Application>
+     */
+    public function scopeOrderByPrioritySeverity(Builder $query, string $direction = 'desc'): Builder
+    {
+        $direction = $direction === 'asc' ? 'asc' : 'desc';
+
+        return $query->orderByRaw(
+            "CASE priority WHEN 'low' THEN 1 WHEN 'normal' THEN 2 WHEN 'high' THEN 3 WHEN 'urgent' THEN 4 END {$direction}",
+        );
     }
 }

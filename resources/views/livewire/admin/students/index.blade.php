@@ -1,0 +1,79 @@
+<div class="flex flex-col gap-6 py-7">
+    <x-page-header :title="__('Students')" :subtitle="__('Every student registered in your department.')" />
+
+    <div class="flex flex-wrap items-end gap-4 rounded-[14px] border border-border bg-white px-6 py-5">
+        <div class="flex min-w-0 flex-1 basis-64 flex-col gap-1">
+            <flux:input wire:model.live.debounce.400ms="search" :label="__('Search')" icon="magnifying-glass" :placeholder="__('Name, reg. no. or email')" />
+        </div>
+
+        <div class="flex min-w-0 flex-1 basis-48 flex-col gap-1">
+            <flux:select wire:model.live="program" :label="__('Program')" :placeholder="__('All programs')">
+                @foreach ($this->programs as $value => $label)
+                    <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+
+        <div class="flex min-w-0 flex-1 basis-32 flex-col gap-1">
+            <flux:select wire:model.live="semester" :label="__('Semester')" :placeholder="__('All')">
+                @foreach (range(1, 8) as $semester)
+                    <flux:select.option :value="(string) $semester">{{ $semester }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+
+        <div class="flex min-w-0 flex-1 basis-40 flex-col gap-1">
+            <flux:select wire:model.live="status" :label="__('Status')" :placeholder="__('All statuses')">
+                @foreach ($this->statuses as $value => $label)
+                    <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+    </div>
+
+    @if ($this->students->isEmpty())
+        <x-empty-state icon="users" :title="__('No students found')" :description="__('Try a different search or filter.')" />
+    @else
+        <x-panel :title="__('Students')">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] border-collapse text-sm">
+                    <thead>
+                        <tr class="text-left text-xs tracking-[0.06em] text-subtle uppercase">
+                            <th class="px-[22px] py-3 font-semibold">{{ __('Student') }}</th>
+                            <th class="px-3 py-3 font-semibold">{{ __('Program') }}</th>
+                            <th class="px-3 py-3 font-semibold">{{ __('Semester') }}</th>
+                            <th class="px-3 py-3 font-semibold">{{ __('Status') }}</th>
+                            <th class="px-[22px] py-3 font-semibold"><span class="sr-only">{{ __('Action') }}</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($this->students as $student)
+                            <tr class="border-t border-border-soft">
+                                <td class="px-[22px] py-3.5">
+                                    <a href="{{ route('admin.students.show', $student) }}" wire:navigate class="flex flex-col gap-0.5 no-underline">
+                                        <span class="font-semibold text-ink">{{ $student->user->name }}</span>
+                                        <span class="text-[13px] text-subtle tabular-nums">{{ $student->registration_no }}</span>
+                                    </a>
+                                </td>
+                                <td class="px-3 py-3.5 text-ink-soft">{{ $student->program }}</td>
+                                <td class="px-3 py-3.5 tabular-nums text-ink-soft">{{ $student->current_semester }}</td>
+                                <td class="px-3 py-3.5">
+                                    <flux:badge :color="$student->user->status->value === 'active' ? 'green' : ($student->user->status->value === 'suspended' ? 'red' : 'zinc')" size="sm">
+                                        {{ \Illuminate\Support\Str::headline($student->user->status->value) }}
+                                    </flux:badge>
+                                </td>
+                                <td class="px-[22px] py-3.5 text-right">
+                                    <flux:button :href="route('admin.students.show', $student)" variant="ghost" size="sm" wire:navigate>{{ __('View') }}</flux:button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-panel>
+
+        <div>
+            {{ $this->students->links() }}
+        </div>
+    @endif
+</div>

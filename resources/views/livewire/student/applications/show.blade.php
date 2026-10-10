@@ -26,6 +26,20 @@
                 <flux:separator />
 
                 <p class="m-0 pt-5 text-[15px] leading-relaxed whitespace-pre-line text-ink-soft">{{ $application->body }}</p>
+
+                @if ($application->status === \App\Enums\ApplicationStatus::Resolved && $application->resolution_note)
+                    <div class="mt-5 rounded-[10px] border border-[#CBE6D3] bg-[#E2F3E8] px-4 py-3.5">
+                        <span class="block text-xs font-semibold tracking-[0.06em] text-[#1F6A3A] uppercase">{{ __('Resolution note') }}</span>
+                        <p class="m-0 mt-1 text-sm leading-relaxed whitespace-pre-line text-[#1F6A3A]">{{ $application->resolution_note }}</p>
+                    </div>
+                @endif
+
+                @if ($application->status === \App\Enums\ApplicationStatus::Rejected && $application->rejection_reason)
+                    <div class="mt-5 rounded-[10px] border border-[#F3C4C0] bg-[#FCEBEA] px-4 py-3.5">
+                        <span class="block text-xs font-semibold tracking-[0.06em] text-[#8A1C14] uppercase">{{ __('Rejection reason') }}</span>
+                        <p class="m-0 mt-1 text-sm leading-relaxed whitespace-pre-line text-[#8A1C14]">{{ $application->rejection_reason }}</p>
+                    </div>
+                @endif
             </x-card>
 
             @if ($application->attachments->isNotEmpty())

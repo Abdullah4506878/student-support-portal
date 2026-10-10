@@ -2,6 +2,7 @@
 
 use App\Enums\ApplicationEventType;
 use App\Enums\ApplicationPriority;
+use App\Enums\ApplicationStatus;
 use App\Livewire\Student\Applications\Show;
 use App\Models\Application;
 use App\Models\ApplicationCategory;
@@ -90,4 +91,30 @@ test('priority is never shown to the student', function () {
         ->test(Show::class, ['application' => $application])
         ->assertDontSee('Urgent')
         ->assertDontSee('urgent');
+});
+
+test('the resolution note is shown once the application is resolved', function () {
+    $student = createStudentUser();
+    $application = createApplicationForStudent($student);
+    $application->update([
+        'status' => ApplicationStatus::Resolved,
+        'resolution_note' => 'Your fee challan has been corrected.',
+    ]);
+
+    Livewire::actingAs($student)
+        ->test(Show::class, ['application' => $application])
+        ->assertSee('Your fee challan has been corrected.');
+});
+
+test('the rejection reason is shown once the application is rejected', function () {
+    $student = createStudentUser();
+    $application = createApplicationForStudent($student);
+    $application->update([
+        'status' => ApplicationStatus::Rejected,
+        'rejection_reason' => 'This issue is outside the department\'s scope.',
+    ]);
+
+    Livewire::actingAs($student)
+        ->test(Show::class, ['application' => $application])
+        ->assertSee('This issue is outside the department\'s scope.');
 });

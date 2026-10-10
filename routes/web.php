@@ -1,9 +1,14 @@
 <?php
 
 use App\Enums\RoleName;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\ApplicationAttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Livewire\Admin\Applications\Index as AdminApplicationsIndex;
+use App\Livewire\Admin\Applications\Show as AdminApplicationsShow;
+use App\Livewire\Admin\Students\Index as AdminStudentsIndex;
+use App\Livewire\Admin\Students\Show as AdminStudentsShow;
 use App\Livewire\Student\Applications\Create as ApplicationsCreate;
 use App\Livewire\Student\Applications\Index as ApplicationsIndex;
 use App\Livewire\Student\Applications\Show as ApplicationsShow;
@@ -35,7 +40,13 @@ Route::middleware(['auth', 'verified', 'role:'.RoleName::Student->value])
 Route::middleware(['auth', 'verified', 'role:'.RoleName::AdminOfficer->value])
     ->prefix('admin')->name('admin.')
     ->group(function () {
-        Route::view('dashboard', 'admin.dashboard')->name('dashboard');
+        Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+
+        Route::livewire('applications', AdminApplicationsIndex::class)->name('applications.index');
+        Route::livewire('applications/{application}', AdminApplicationsShow::class)->name('applications.show');
+
+        Route::livewire('students', AdminStudentsIndex::class)->name('students.index');
+        Route::livewire('students/{student}', AdminStudentsShow::class)->name('students.show');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.RoleName::SuperAdmin->value])

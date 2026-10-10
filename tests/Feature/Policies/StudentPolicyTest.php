@@ -71,6 +71,29 @@ test('a student cannot update another student profile', function () {
     expect($student->can('update', $student->student))->toBeTrue();
 });
 
+test('an admin officer can correct the name of a student in their own department', function () {
+    $department = Department::factory()->create();
+    $admin = createAdminOfficer($department);
+    $student = createStudentUser($department);
+
+    expect($admin->can('updateName', $student->student))->toBeTrue();
+});
+
+test('an admin officer cannot correct the name of a student in another department', function () {
+    $departmentA = Department::factory()->create();
+    $departmentB = Department::factory()->create();
+    $admin = createAdminOfficer($departmentA);
+    $student = createStudentUser($departmentB);
+
+    expect($admin->can('updateName', $student->student))->toBeFalse();
+});
+
+test('a student cannot correct their own name', function () {
+    $student = createStudentUser();
+
+    expect($student->can('updateName', $student->student))->toBeFalse();
+});
+
 test('students are never deleted, by anyone', function () {
     $student = createStudentUser();
     $superAdmin = createSuperAdmin();

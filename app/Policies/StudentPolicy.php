@@ -53,6 +53,16 @@ class StudentPolicy
     }
 
     /**
+     * Correcting the student's name (e.g. a typo from registration) is an
+     * Admin Officer/Super Admin action, distinct from update() above, which
+     * is the student editing their own profile.
+     */
+    public function updateName(User $user, Student $student): bool
+    {
+        return $this->managedBy($user, $student);
+    }
+
+    /**
      * Students are never deleted.
      */
     public function delete(User $user, Student $student): bool
